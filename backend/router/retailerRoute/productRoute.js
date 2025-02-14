@@ -4,6 +4,8 @@ const Product = require("../../model/productSchema");
 
 const router = express.Router();
 
+const vendorSchema = require("../../model/vendorSchema");
+
 //  Add a new product
 router.post("/", async (req, res) => {
   try {
@@ -12,6 +14,16 @@ router.post("/", async (req, res) => {
     retailerId = Number(retailerId);
     const product = new Product({ ...productData, retailerId });
     await product.save();
+
+    await vendorSchema.findOneAndUpdate(
+      { retailerId }, 
+      {
+        $push: {
+          inventory: { productId:product.productId, quantity: Number(product.stock) }, 
+        },
+      },
+      { new: true }
+    );
 
     res.status(201).json({ message: "Product added successfully", product });
   } catch (error) {
@@ -67,7 +79,17 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const product = await Product.findOneAndDelete({productId: req.params.id});
+
     if (!product) return res.status(404).json({ message: "Product not found" });
+    await vendorSchema.findOneAndDelete(
+      {retailerId: product.retailerId }, 
+      {
+        $pull: {
+          inventory: { productId:product.productId }, 
+        },
+      },
+      { new: true }
+    );
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

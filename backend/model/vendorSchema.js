@@ -29,7 +29,7 @@ const RetailerSchema = new mongoose.Schema({
   inventory: [
     {
       productId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: "Product",
         required: true,
       },

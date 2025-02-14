@@ -80,7 +80,7 @@ router.post("/forgot-password", async (req, res) => {
     vendor.resetPasswordExpires = Date.now() + 3600000;
     await vendor.save();
 
-    const resetUrl = `http://localhost:6565/api/vendors/auth/reset-password`;
+    const resetUrl = `http://localhost:6565/api/vendors/auth/reset-password/${resetToken}`;
     await sendEmail(
       email,
       "Password Reset Request",
@@ -92,40 +92,31 @@ router.post("/forgot-password", async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
-router.post("/reset-password", async (req, res) => {
-    try {
- 
-      const newPassword=req.body;
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(400).json({ message: "No token provided" });
-      }
-      
-      const token = authHeader.split(" ")[1]; 
-  
-      const vendor = await Vendor.findOne({
-        resetPasswordToken: token,
-        resetPasswordExpires: { $gt: Date.now() },
-      });
+router.post("/reset/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const {newPassword}=req.body;
+    console.log(newPassword);
+
+    const vendor = await Vendor.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!vendor) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
 
   
-      if (!vendor) {
-        return res.status(400).json({ message: "Invalid or expired token" });
-      }
-  
-     
-  
-      const salt = await bcrypt.genSalt(10);
-      vendor.password = await bcrypt.hash(req.body.newPassword, salt);
-      vendor.resetPasswordToken = null;
-      vendor.resetPasswordExpires = null;
-  
-      await vendor.save();
-      res.json({ message: "Password reset successful" });
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  });
-  
-  module.exports = router;
-  
+    vendor.password = newPassword  ;
+    vendor.resetPasswordToken = null;
+    vendor.resetPasswordExpires = null;
+
+    await vendor.save();
+    res.json({ message: "Password reset successful" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+module.exports = router;

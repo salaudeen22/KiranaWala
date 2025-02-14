@@ -16,10 +16,13 @@ router.post("/", async (req, res) => {
     await product.save();
 
     await vendorSchema.findOneAndUpdate(
-      { retailerId }, 
+      { retailerId },
       {
         $push: {
-          inventory: { productId:product.productId, quantity: Number(product.stock) }, 
+          inventory: {
+            productId: product.productId,
+            quantity: Number(product.stock),
+          },
         },
       },
       { new: true }
@@ -65,9 +68,13 @@ router.get("/category/:category", async (req, res) => {
 //  Update a product
 router.put("/:id", async (req, res) => {
   try {
-    const product = await Product.findOneAndUpdate({productId:req.params.id}, req.body, {
-      new: true,
-    });
+    const product = await Product.findOneAndUpdate(
+      { productId: req.params.id },
+      req.body,
+      {
+        new: true,
+      }
+    );
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json({ message: "Product updated successfully", product });
   } catch (error) {
@@ -78,14 +85,16 @@ router.put("/:id", async (req, res) => {
 //  Delete a product
 router.delete("/:id", async (req, res) => {
   try {
-    const product = await Product.findOneAndDelete({productId: req.params.id});
+    const product = await Product.findOneAndDelete({
+      productId: req.params.id,
+    });
 
     if (!product) return res.status(404).json({ message: "Product not found" });
-    await vendorSchema.findOneAndDelete(
-      {retailerId: product.retailerId }, 
+    await vendorSchema.findOneAndUpdate(
+      { retailerId: product.retailerId },
       {
         $pull: {
-          inventory: { productId:product.productId }, 
+          inventory: { productId: product.productId },
         },
       },
       { new: true }

@@ -13,14 +13,14 @@ const RetailerSchema = new mongoose.Schema({
     required: true,
   },
   ownerId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type:String,
     ref: "Owner",
     required: true,
   },
   location: {
     address: { type: String, required: true },
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
+    lat: { type: Number },
+    lng: { type: Number },
   },
   walletBalance: {
     type: Number,
@@ -66,11 +66,11 @@ const RetailerSchema = new mongoose.Schema({
     fssaiNumber: { type: String, unique: true, sparse: true },
     businessLicense: { type: String },
   },
-  contactDetails: {
-    phone: { type: String, required: true, unique: true },
-    email: { type: String, unique: true },
-    whatsapp: { type: String },
-  },
+
+  phone: { type: String, required: true, unique: true },
+  // email: { type: String, unique: true },
+  // whatsapp: { type: String },
+
   ratings: {
     averageRating: { type: Number, default: 0 },
     totalReviews: { type: Number, default: 0 },

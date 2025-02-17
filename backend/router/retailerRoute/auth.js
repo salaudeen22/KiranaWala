@@ -17,8 +17,9 @@ router.post("/register", async (req, res) => {
       email,
       password,
       location,
-      contactDetails,
+      phone,
       registrationDetails,
+      deliveryOptions
     } = req.body;
 
     const existingVendor = await Vendor.findOne({ email });
@@ -31,8 +32,9 @@ router.post("/register", async (req, res) => {
       email,
       password,
       location,
-      contactDetails,
+      phone,
       registrationDetails,
+      deliveryOptions
     });
 
     await vendor.save();

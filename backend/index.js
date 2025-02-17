@@ -3,12 +3,14 @@ const express = require("express");
 const connectdb = require("./database/db");
 const app = express();
 const port = process.env.PORT || 6565;
+var cors = require('cors')
 const venAuthRoute = require("./router/retailerRoute/auth");
 const productRoute=require("./router/retailerRoute/productRoute")
 
 connectdb();
 
 app.use(express.json());
+app.use(cors())
 
 app.use("/api/vendor/auth", venAuthRoute);
 app.use("/api/vendor/products",productRoute);

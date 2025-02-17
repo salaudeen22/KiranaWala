@@ -23,7 +23,7 @@ const Login = () => {
       if (response.status == 200) {
         localStorage.setItem("token", json.token);
 
-        navigate("/");
+        navigate("/home");
       } else {
         alert("Invalid");
       }

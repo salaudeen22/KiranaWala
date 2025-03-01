@@ -22,6 +22,8 @@ const Login = () => {
       const json = await response.json();
       if (response.status == 200) {
         localStorage.setItem("token", json.token);
+   
+        localStorage.setItem("retailId",json.vendor.retailerId);
 
         navigate("/home");
       } else {

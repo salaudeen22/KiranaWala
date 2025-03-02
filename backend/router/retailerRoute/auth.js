@@ -6,6 +6,8 @@ const router = express.Router();
 
 const Vendor = require("../../model/vendorSchema");
 const sendEmail = require("../../middleware/sendMail");
+const vendorSchema = require("../../model/vendorSchema");
+const authMiddleware = require("../../middleware/authMiddleware");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -63,6 +65,24 @@ router.post("/login", async (req, res) => {
     res.json({ token, vendor });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+router.get("/profileDetails", authMiddleware, async (req, res) => {
+  try {
+    console.log("Request User:", req.user)
+    const userId = req.user.vendorId; 
+    // console.log(userId);
+    const details = await Vendor.findById(userId).select("-password"); 
+
+    if (!details) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(details);
+  } catch (error) {
+    console.error("Error fetching profile details:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

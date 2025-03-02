@@ -6,6 +6,7 @@ import Profile from "./screen/Profile";
 import Sales from "./screen/Sales";
 import Login from "./screen/auth/Login";
 import SignUp from "./screen/auth/SignUp";
+import UserManagement from "./screen/UserManagement";
 
 const App = () => {
   return (
@@ -16,6 +17,7 @@ const App = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="sales" element={<Sales />} />
+        <Route path="usermanagment" element={<UserManagement/>}/>
         <Route path="profile" element={<Profile />} />
       </Route>
     </Routes>

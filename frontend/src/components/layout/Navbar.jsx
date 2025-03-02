@@ -1,8 +1,10 @@
+import { useSidebar } from "../../context/ToggleSideBar";
+import { useUser } from "../../context/userContext";
 import { useState } from "react";
+import { useContext } from "react";
 import { CiSearch } from "react-icons/ci";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { useNavigate } from "react-router-dom";
-import { useSidebar } from "../../context/ToggleSideBar";
 
 const NavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -14,15 +16,18 @@ const NavBar = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
+  const { userData } = useUser();
   return (
     <nav className="bg-white border-gray-200 dark:bg-amber-300 shadow-md fixed w-full top-0 z-30">
       <div className="max-w-screen-xl flex items-center justify-between mx-auto p-4">
-        <GiHamburgerMenu className="text-gray-500 dark:text-white mr-4" onClick={toggleSidebar} />
+        <GiHamburgerMenu
+          className="text-gray-500 dark:text-white mr-4"
+          onClick={toggleSidebar}
+        />
         <a href="/" className="flex items-center space-x-3">
           <span className="self-center text-2xl font-semibold text-gray-900 dark:text-white">
             Kiranwalla
@@ -45,8 +50,6 @@ const NavBar = () => {
               placeholder="Search..."
             /> */}
           </div>
-
-       
         </div>
 
         <div className="relative">
@@ -67,10 +70,10 @@ const NavBar = () => {
             <div className="z-50 absolute right-0 mt-2 w-48 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-700 dark:divide-gray-600">
               <div className="px-4 py-3">
                 <span className="block text-sm text-gray-900 dark:text-white">
-                  Bonnie Green
+                  {userData?.name ?? "Guest"}
                 </span>
                 <span className="block text-sm text-gray-500 truncate dark:text-gray-400">
-                  name@flowbite.com
+                  {userData?.email ?? "No email"}
                 </span>
               </div>
               <ul className="py-2">

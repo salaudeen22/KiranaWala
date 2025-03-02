@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FaTachometerAlt, FaBox, FaCalculator, FaUserEdit } from "react-icons/fa"; 
+import { FaTachometerAlt, FaBox, FaCalculator, FaUserEdit, FaUserFriends } from "react-icons/fa"; 
 import { useSidebar } from "../../context/ToggleSideBar";
 
 const Sidebar = () => {
@@ -32,7 +32,14 @@ const Sidebar = () => {
           onClick={() => navigate("/home/sales")} 
         >
           <FaCalculator className="text-xl" />
-          <span className="text-lg">Sales</span>
+          <span className="text-lg">Billing</span>
+        </li>
+        <li
+          className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"
+          onClick={() => navigate("/home/usermanagment")} 
+        >
+          <FaUserFriends className="text-xl" />
+          <span className="text-lg">User Managment</span>
         </li>
         <li
           className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"

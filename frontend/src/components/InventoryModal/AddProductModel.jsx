@@ -1,4 +1,9 @@
-const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsModalOpen }) => {
+const AddProductModel = ({
+  newProduct,
+  setNewProduct,
+  handleAddProduct,
+  setIsModalOpen,
+}) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -27,13 +32,32 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
     handleAddProduct(newProduct);
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch("http://localhost:6565/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    console.log("Added Succesfully");
+
+    const data = await response.json();
+    if (data.imageUrl) {
+      setNewProduct((prev) => ({ ...prev, images: [{ url: data.imageUrl }] }));
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg w-96">
         <h2 className="text-xl font-semibold mb-4">Add Product</h2>
         <form>
           <div className="mb-4">
-            <label htmlFor="productId" className="block text-gray-700">Product ID</label>
+            <label htmlFor="productId" className="block text-gray-700">
+              Product ID
+            </label>
             <input
               type="text"
               id="productId"
@@ -44,7 +68,9 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-gray-700">Name</label>
+            <label htmlFor="name" className="block text-gray-700">
+              Name
+            </label>
             <input
               type="text"
               id="name"
@@ -55,7 +81,9 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="category" className="block text-gray-700">Category</label>
+            <label htmlFor="category" className="block text-gray-700">
+              Category
+            </label>
             <select
               id="category"
               name="category"
@@ -70,7 +98,9 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             </select>
           </div>
           <div className="mb-4">
-            <label htmlFor="price" className="block text-gray-700">Price</label>
+            <label htmlFor="price" className="block text-gray-700">
+              Price
+            </label>
             <input
               type="number"
               id="price"
@@ -81,7 +111,9 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="discount" className="block text-gray-700">Discount</label>
+            <label htmlFor="discount" className="block text-gray-700">
+              Discount
+            </label>
             <input
               type="number"
               id="discount"
@@ -92,7 +124,9 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="stock" className="block text-gray-700">Stock</label>
+            <label htmlFor="stock" className="block text-gray-700">
+              Stock
+            </label>
             <input
               type="number"
               id="stock"
@@ -103,7 +137,9 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="expiryDate" className="block text-gray-700">Expiry Date</label>
+            <label htmlFor="expiryDate" className="block text-gray-700">
+              Expiry Date
+            </label>
             <input
               type="date"
               id="expiryDate"
@@ -114,13 +150,12 @@ const AddProductModel = ({ newProduct, setNewProduct, handleAddProduct, setIsMod
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="images" className="block text-gray-700">Product Image URL</label>
+            <label htmlFor="images" className="block text-gray-700">
+              Product Image URL
+            </label>
             <input
-              type="text"
-              id="images"
-              name="images"
-              value={newProduct.images[0].url}
-              onChange={(e) => handleInputChange({ ...e, target: { name: 'images', value: [{ url: e.target.value }] } })}
+              type="file"
+              onChange={handleImageUpload}
               className="w-full p-2 border border-gray-300 rounded-lg"
             />
           </div>

@@ -10,7 +10,6 @@ const vendorSchema = require("../../model/vendorSchema");
 router.post("/", async (req, res) => {
   try {
     let { retailerId, ...productData } = req.body;
-
     retailerId = Number(retailerId);
     const product = new Product({ ...productData, retailerId });
     await product.save();

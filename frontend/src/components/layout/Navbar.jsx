@@ -20,7 +20,7 @@ const NavBar = () => {
     navigate("/login");
   };
   return (
-    <nav className="bg-white border-gray-200 dark:bg-gray-900 shadow-md fixed w-full top-0 z-30">
+    <nav className="bg-white border-gray-200 dark:bg-amber-300 shadow-md fixed w-full top-0 z-30">
       <div className="max-w-screen-xl flex items-center justify-between mx-auto p-4">
         <GiHamburgerMenu className="text-gray-500 dark:text-white mr-4" onClick={toggleSidebar} />
         <a href="/" className="flex items-center space-x-3">
@@ -38,12 +38,12 @@ const NavBar = () => {
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <CiSearch className="text-gray-500 dark:text-white sm:hidden" />
             </div>
-            <input
+            {/* <input
               type="text"
               id="search-navbar"
-              className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-red-600 focus:border-red-600 dark:bg-#FEFBEF dark:border-gray-600 dark:text-black dark:focus:ring-red-600 dark:focus:border-red-600"
               placeholder="Search..."
-            />
+            /> */}
           </div>
 
        

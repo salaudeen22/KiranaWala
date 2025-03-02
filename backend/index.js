@@ -6,6 +6,7 @@ const port = process.env.PORT || 6565;
 var cors = require('cors')
 const venAuthRoute = require("./router/retailerRoute/auth");
 const productRoute=require("./router/retailerRoute/productRoute")
+const UploadImage=require("./middleware/upload")
 
 connectdb();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(cors())
 
 app.use("/api/vendor/auth", venAuthRoute);
+app.use("/api",UploadImage);
 app.use("/api/vendor/products",productRoute);
 
 app.listen(port, () => {

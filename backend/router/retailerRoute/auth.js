@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const router = express.Router();
 
 const Vendor = require("../../model/vendorSchema");
-const sendEmail = require("../../helper/sendMail");
+const sendEmail = require("../../middleware/sendMail");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

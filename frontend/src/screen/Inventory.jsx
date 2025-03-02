@@ -1,11 +1,9 @@
+import EditProductModel from "../components/InventoryModal/EditProductModel";
 import AddProductModel from "../components/InventoryModal/addProductModel";
 import { useState, useEffect } from "react";
 
 const Inventory = () => {
   const [products, setProducts] = useState([]);
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [order, setOrder] = useState("asc");
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     productId: "",
     name: "",
@@ -14,9 +12,12 @@ const Inventory = () => {
     discount: "",
     stock: "",
     expiryDate: "",
-    images: [{ url: "" }],
-    ratings: { averageRating: 0 },
+    images: [],
   });
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -24,11 +25,10 @@ const Inventory = () => {
         "http://localhost:6565/api/vendor/products/",
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
+
       if (response.ok) {
         const json = await response.json();
         setProducts(json);
@@ -43,23 +43,13 @@ const Inventory = () => {
     fetchData();
   }, []);
 
-  const handleSortChange = (field) => {
-    if (sortBy === field) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setOrder("asc");
-    }
-  };
   const handleAddProduct = async (newProduct) => {
     try {
       const response = await fetch(
         "http://localhost:6565/api/vendor/products/",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newProduct),
         }
       );
@@ -67,9 +57,9 @@ const Inventory = () => {
       if (response.ok) {
         alert("Added successfully");
         fetchData();
+        setIsModalOpen(false);
       } else {
         const errorData = await response.json();
-        console.log(errorData);
         alert(
           "Failed to add product: " + (errorData.message || "Unknown error")
         );
@@ -80,20 +70,27 @@ const Inventory = () => {
     }
   };
 
+  const handleEditProduct = (product) => {
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
+  };
+
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="bg-[#FEFBEF] min-h-screen text-[#0E0E0E]">
+      {/* Add Product Button */}
       <div className="mb-4 flex space-x-4">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-purple-600 transition"
+          className="px-6 py-2 bg-[#E54D43] text-white rounded-lg hover:bg-[#D9B13B] transition"
         >
           Add Product
         </button>
       </div>
 
-      <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-        <table className="table-auto w-full border-collapse text-gray-700">
-          <thead className="bg-gray-800 text-white">
+      {/* Table Section */}
+      <div className="overflow-x-auto bg-white shadow-lg rounded-lg">
+        <table className="table-auto w-full border-collapse text-[#0E0E0E]">
+          <thead className="bg-[#D9B13B] text-white">
             <tr>
               <th className="px-4 py-3 border border-gray-300 text-left">
                 Product ID
@@ -122,7 +119,8 @@ const Inventory = () => {
             {products.map((product) => (
               <tr
                 key={product.productId}
-                className="hover:bg-gray-100 transition"
+                onClick={() => handleEditProduct(product)}
+                className="hover:bg-[#F0CF54] transition cursor-pointer"
               >
                 <td className="px-4 py-3 border border-gray-300">
                   {product.productId}
@@ -134,7 +132,7 @@ const Inventory = () => {
                   {product.category}
                 </td>
                 <td className="px-4 py-3 border border-gray-300">
-                  {product.finalPrice}
+                  ₹{product.finalPrice}
                 </td>
                 <td className="px-4 py-3 border border-gray-300">
                   {product.discount}%
@@ -157,6 +155,14 @@ const Inventory = () => {
           setNewProduct={setNewProduct}
           handleAddProduct={handleAddProduct}
           setIsModalOpen={setIsModalOpen}
+        />
+      )}
+
+      {isEditModalOpen && selectedProduct && (
+        <EditProductModel
+          product={selectedProduct}
+          setIsEditModalOpen={setIsEditModalOpen}
+          handleUpdateProduct={fetchData}
         />
       )}
     </div>

@@ -1,77 +1,120 @@
-import React from "react";
+import React, { useState } from "react";
+import { AiOutlinePlusCircle, AiOutlineDelete } from "react-icons/ai";
 
 const Sales = () => {
+  const [items, setItems] = useState([]);
+  const [newItem, setNewItem] = useState({ barcode: "", name: "", id: "", price: "" });
+
+  const addItem = () => {
+    if (!newItem.barcode && !newItem.name && !newItem.id) return;
+    setItems([...items, { ...newItem, quantity: 1 }]);
+    setNewItem({ barcode: "", name: "", id: "", price: "" });
+  };
+
+  const removeItem = (index) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
   return (
-    <div className="h-screen w-full ">
-      <div className="DetailsPanel w-full bg-white shadow-lg rounded-xl p-2 flex flex-row gap-2">
-      
-        <div className="ventorDetails bg-red-300 p-4 rounded-lg shadow-md">
-          <h1 className="text-lg font-bold text-gray-800">Shop Details</h1>
-          <h1 className="text-md font-semibold mt-2">
-            <b>Vendor Name:</b> Din Mart
-          </h1>
-          <h4 className="text-sm text-gray-700 mt-2">
-            <b>Address: </b> 5, Babu Reddy Complex, Begur Main Road, Hongsandra,
-            Bommanahalli, Bengaluru, Karnataka 560068
-          </h4>
-          <h4 className="text-sm text-gray-700 mt-2">
-            <b>Login: </b> Admin
-          </h4>
+    <div className="min-h-screen bg-[#FEFBEF] text-[#0E0E0E] p-4">
+      {/* Header Section */}
+      <div className="bg-[#D9B13B] p-4 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between">
+        <div>
+          <h1 className="text-lg font-bold">Shop Details</h1>
+          <p className="text-sm"><b>Vendor:</b> Din Mart</p>
+          <p className="text-sm"><b>Address:</b> 5, Babu Reddy Complex, Begur Main Road, Bengaluru</p>
         </div>
+        <div className="text-right">
+          <p className="text-sm"><b>Invoice:</b> 1234</p>
+          <p className="text-sm"><b>Date:</b> 12/2/2025</p>
+        </div>
+      </div>
 
-        <div className="ventorAssistance w-full bg-gray-100 p-4 rounded-lg shadow-md">
-          <div className="InvoiceDetails flex justify-between text-sm font-medium text-gray-800">
-            <h5>
-              Invoice Number: <span className="font-semibold">1234</span>
-            </h5>
-            <h5>
-              Date: <span className="font-semibold">12/2/2025</span>
-            </h5>
-          </div>
+      {/* Input Section */}
+      <div className="mt-4 bg-white p-4 rounded-xl shadow-lg">
+        <h2 className="text-md font-semibold mb-2">Add Item</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input
+            type="text"
+            placeholder="Barcode"
+            value={newItem.barcode}
+            onChange={(e) => setNewItem({ ...newItem, barcode: e.target.value })}
+            className="border p-2 rounded-lg focus:ring-2 focus:ring-[#E54D43]"
+          />
+          <input
+            type="text"
+            placeholder="Item Name"
+            value={newItem.name}
+            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+            className="border p-2 rounded-lg focus:ring-2 focus:ring-[#E54D43]"
+          />
+          <input
+            type="text"
+            placeholder="Search Code"
+            value={newItem.id}
+            onChange={(e) => setNewItem({ ...newItem, id: e.target.value })}
+            className="border p-2 rounded-lg focus:ring-2 focus:ring-[#E54D43]"
+          />
+          <input
+            type="number"
+            placeholder="Price"
+            value={newItem.price}
+            onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+            className="border p-2 rounded-lg focus:ring-2 focus:ring-[#E54D43]"
+          />
+        </div>
+        <button
+          onClick={addItem}
+          className="mt-3 bg-[#F0CF54] text-black px-4 py-2 rounded-lg shadow hover:bg-[#D9B13B] flex items-center gap-2"
+        >
+          <AiOutlinePlusCircle /> Add Item
+        </button>
+      </div>
 
-          <div className="flex flex-col gap-4 mt-4">
-            <div className="flex flex-col">
-              <label
-                htmlFor="barcode"
-                className="text-sm font-medium text-gray-700"
-              >
-                Barcode
-              </label>
-              <input
-                type="text"
-                id="barcode"
-                className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-            </div>
+      {/* Item Table */}
+      <div className="mt-4 bg-white p-4 rounded-xl shadow-lg">
+        <h2 className="text-md font-semibold mb-2">Billing Items</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#E54D43] text-white">
+                <th className="p-2">S.No</th>
+                <th className="p-2">Barcode</th>
+                <th className="p-2">Item Name</th>
+                <th className="p-2">Price</th>
+                <th className="p-2">Quantity</th>
+                <th className="p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, index) => (
+                <tr key={index} className="border-b">
+                  <td className="p-2">{index + 1}</td>
+                  <td className="p-2">{item.barcode || "N/A"}</td>
+                  <td className="p-2">{item.name || "N/A"}</td>
+                  <td className="p-2">{item.price || "0"}</td>
+                  <td className="p-2">1</td>
+                  <td className="p-2">
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="text-[#E54D43] hover:text-red-600"
+                    >
+                      <AiOutlineDelete />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            <div className="flex flex-col">
-              <label
-                htmlFor="ItemName"
-                className="text-sm font-medium text-gray-700"
-              >
-                Item Name
-              </label>
-              <input
-                type="text"
-                id="ItemName"
-                className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label
-                htmlFor="SearchCode"
-                className="text-sm font-medium text-gray-700"
-              >
-                Search Code
-              </label>
-              <input
-                type="number"
-                id="SearchCode"
-                className="border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-            </div>
-          </div>
+      {/* Billing Summary */}
+      <div className="mt-4 bg-[#F0CF54] p-4 rounded-xl shadow-lg">
+        <h2 className="text-md font-semibold mb-2">Total Summary</h2>
+        <div className="flex justify-between">
+          <p><b>Total Items:</b> {items.length}</p>
+          <p><b>Total Amount:</b> ₹{items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0)}</p>
         </div>
       </div>
     </div>

@@ -45,12 +45,12 @@ const AddProductModel = ({
 
     const data = await response.json();
     if (data.imageUrl) {
-      setNewProduct((prev) => ({ ...prev, images: [{ url: data.imageUrl }] }));
+      setNewProduct((prev) => ({ ...prev, images: data.imageUrl }));
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="fixed z-50 inset-0 bg-black bg-opacity-40 backdrop-blur-md flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg w-96">
         <h2 className="text-xl font-semibold mb-4">Add Product</h2>
         <form>

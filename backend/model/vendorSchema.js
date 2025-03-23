@@ -47,7 +47,7 @@ const RetailerSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-  employees: [{ type: mongoose.Schema.Types.ObjectId, ref: "Employee" }], 
+  employees: [{ type: String, ref: "Employee" }], 
 });
 
 RetailerSchema.pre("save", async function (next) {

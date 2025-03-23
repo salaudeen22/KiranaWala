@@ -23,7 +23,8 @@ const Login = () => {
       if (response.status == 200) {
         localStorage.setItem("token", json.token);
    
-        localStorage.setItem("retailId",json.vendor.retailerId);
+        localStorage.setItem("retailId",json.vendor._id);
+        console.log(json.vendor._id);
 
         navigate("/home");
       } else {

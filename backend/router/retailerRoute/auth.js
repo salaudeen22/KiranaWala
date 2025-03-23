@@ -1,140 +1,84 @@
 const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
 const router = express.Router();
-
-const Vendor = require("../../model/vendorSchema");
-const sendEmail = require("../../middleware/sendMail");
-const vendorSchema = require("../../model/vendorSchema");
 const authMiddleware = require("../../middleware/authMiddleware");
+const Vendor = require("../../model/vendorSchema"); 
+const { createVendor, generateToken, comparePasswords, generateResetToken } = require("../../service/vendorService");
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
+//  REGISTER VENDOR
 router.post("/register", async (req, res) => {
   try {
-    const {
-      name,
-      ownerId,
-      email,
-      password,
-      location,
-      phone,
-      registrationDetails,
-      deliveryOptions
-    } = req.body;
+    const existingVendor = await Vendor.findOne({ email: req.body.email });
+    if (existingVendor) return res.status(400).json({ message: "Vendor already exists" });
 
-    const existingVendor = await Vendor.findOne({ email });
-    if (existingVendor)
-      return res.status(400).json({ message: "Vendor already exists" });
-
-    const vendor = new Vendor({
-      name,
-      ownerId,
-      email,
-      password,
-      location,
-      phone,
-      registrationDetails,
-      deliveryOptions
-    });
-
-    await vendor.save();
+    const vendor = await createVendor(req.body);
     res.status(201).json({ message: "Vendor registered successfully", vendor });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
+//  LOGIN VENDOR
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const vendor = await Vendor.findOne({ email });
-    if (!vendor)
+    if (!vendor || !(await comparePasswords(password, vendor.password))) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    const isMatch = await bcrypt.compare(password, vendor.password);
-
-    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
-
-    const token = jwt.sign({ vendorId: vendor._id }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
+    const token = generateToken(vendor._id);
     res.json({ token, vendor });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
+// 🔹 FETCH PROFILE DETAILS
 router.get("/profileDetails", authMiddleware, async (req, res) => {
   try {
-    console.log("Request User:", req.user)
-    const userId = req.user.vendorId; 
-    // console.log(userId);
-    const details = await Vendor.findById(userId).select("-password"); 
-
-    if (!details) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
+    const details = await Vendor.findById(req.user.vendorId).select("-password");
+    if (!details) return res.status(404).json({ message: "User not found" });
     res.json(details);
   } catch (error) {
-    console.error("Error fetching profile details:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
+// 🔹 LOGOUT VENDOR
 router.post("/logout", (req, res) => {
   res.json({ message: "Vendor logged out successfully" });
 });
 
+//  FORGOT PASSWORD
 router.post("/forgot-password", async (req, res) => {
   try {
-    const { email } = req.body;
-    const vendor = await Vendor.findOne({ email });
-
+    const vendor = await Vendor.findOne({ email: req.body.email });
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    vendor.resetPasswordToken = resetToken;
-    vendor.resetPasswordExpires = Date.now() + 3600000;
-    await vendor.save();
-
-    const resetUrl = `http://localhost:6565/api/vendors/auth/reset-password/${resetToken}`;
-    await sendEmail(
-      email,
-      "Password Reset Request",
-      `Click here to reset your password: ${resetUrl}`
-    );
+    const resetToken = await generateResetToken(vendor);
+    await sendResetEmail(req.body.email, resetToken);
 
     res.json({ message: "Password reset link sent to email" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+//  RESET PASSWORD
 router.post("/reset/:token", async (req, res) => {
   try {
-    const { token } = req.params;
-    const {newPassword}=req.body;
-    console.log(newPassword);
-
     const vendor = await Vendor.findOne({
-      resetPasswordToken: token,
+      resetPasswordToken: req.params.token,
       resetPasswordExpires: { $gt: Date.now() },
     });
 
-    if (!vendor) {
-      return res.status(400).json({ message: "Invalid or expired token" });
-    }
+    if (!vendor) return res.status(400).json({ message: "Invalid or expired token" });
 
-  
-    vendor.password = newPassword  ;
+    vendor.password = await hashPassword(req.body.newPassword);
     vendor.resetPasswordToken = null;
     vendor.resetPasswordExpires = null;
-
     await vendor.save();
+
     res.json({ message: "Password reset successful" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

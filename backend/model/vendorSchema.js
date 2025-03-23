@@ -57,6 +57,7 @@ RetailerSchema.pre("save", async function (next) {
   next();
 });
 
+
 RetailerSchema.plugin(AutoIncrement, { inc_field: "retailerId", start_seq: 1 });
 
 module.exports = mongoose.model("Retailer", RetailerSchema);

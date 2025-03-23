@@ -8,7 +8,13 @@ const EmployeeSchema = new mongoose.Schema({
   role: { type: String, enum: ["manager", "employee"], required: true },
   retailerId: { type: mongoose.Schema.Types.ObjectId, ref: "Retailer", required: true },
   panCard: { type: String, required: true },
-  aadhaarCard: { type: String, required: true, unique: true },
+  aadhaar: {
+    type: String,
+    required: true,
+    unique: true,
+    match: [/^\d{12}$/, "Invalid Aadhaar format"]
+  }
+,  
   userImage: { type: String,required:true },
 }, { timestamps: true });
 

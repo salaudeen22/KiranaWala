@@ -59,15 +59,9 @@ const CustomerSchema = new mongoose.Schema({
       details: { type: String, required: true },
       isDefault: { type: Boolean, default: false }
     }
-  ],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  ]
+
+
+}  , { timestamps: true });
 
 module.exports = mongoose.model("Customer", CustomerSchema);

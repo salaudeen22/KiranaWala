@@ -10,7 +10,7 @@ const UploadImage = require("./middleware/upload");
 const employeeRoute = require("./router/retailerRoute/employeeRoutes");
 // const orderRoutes = require("./router/retailerRoute/orderRoutes");
 // const inventoryRoute = require("./router/retailerRoute/inventoryRoutes.js");
-// const analyticsRoute = require("./router/retailerRoute/analyticsRoutes");
+const analyticsRoute = require("./router/retailerRoute/analyticsRoutes");
 
 connectdb();
 
@@ -20,7 +20,7 @@ app.use(cors());
 app.use("/api/vendor/auth", venAuthRoute);
 
 
-// app.use("/api/inventory", inventoryRoute);
+app.use("/api/orders", analyticsRoute);
 
 
 

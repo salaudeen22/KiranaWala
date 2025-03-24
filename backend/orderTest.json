@@ -1,0 +1,93 @@
+[
+    {
+      "orderId": "ORD1001",
+      "customerId": "67b36abcd12eec02a4e859f1",
+      "storeId": "67b35eebd72eec02a4e859f5",
+      "items": [
+        { "productId": "21", "quantity": 2, "priceAtPurchase": 150 },
+        { "productId": "12", "quantity": 1, "priceAtPurchase": 100 }
+      ],
+      "totalAmount": 400,
+      "paymentDetails": {
+        "method": "UPI",
+        "transactionId": "TXNUPI12345",
+        "status": "paid"
+      },
+      "status": "delivered",
+      "deliveryPersonId": "67c50a6fd72eec02a4e85aa1",
+      "deliveryDetails": {
+        "estimatedTime": 30,
+        "deliveredAt": "2025-03-20T14:30:00Z"
+      },
+      "createdAt": "2025-03-19T12:00:00Z",
+      "updatedAt": "2025-03-20T14:30:00Z"
+    },
+    {
+      "orderId": "ORD1002",
+      "customerId": "67b36abcd12eec02a4e859f2",
+      "storeId": "67b35eebd72eec02a4e859f5",
+      "items": [
+        { "productId": "12P", "quantity": 3, "priceAtPurchase": 200 }
+      ],
+      "totalAmount": 600,
+      "paymentDetails": {
+        "method": "COD",
+        "transactionId": null,
+        "status": "pending"
+      },
+      "status": "pending",
+      "deliveryPersonId": null,
+      "deliveryDetails": {
+        "estimatedTime": null,
+        "deliveredAt": null
+      },
+      "createdAt": "2025-03-21T10:15:00Z",
+      "updatedAt": "2025-03-21T10:15:00Z"
+    },
+    {
+      "orderId": "ORD1003",
+      "customerId": "67b36abcd12eec02a4e859f3",
+      "storeId": "67b35eebd72eec02a4e859f5",
+      "items": [
+        { "productId": "12213", "quantity": 1, "priceAtPurchase": 500 }
+      ],
+      "totalAmount": 500,
+      "paymentDetails": {
+        "method": "Card",
+        "transactionId": "TXNCARD6789",
+        "status": "paid"
+      },
+      "status": "shipped",
+      "deliveryPersonId": "67c50a6fd72eec02a4e85aa2",
+      "deliveryDetails": {
+        "estimatedTime": 45,
+        "deliveredAt": null
+      },
+      "createdAt": "2025-03-18T15:45:00Z",
+      "updatedAt": "2025-03-19T08:00:00Z"
+    },
+    {
+      "orderId": "ORD1004",
+      "customerId": "67b36abcd12eec02a4e859f4",
+      "storeId": "67b35eebd72eec02a4e859f5",
+      "items": [
+        { "productId": "21", "quantity": 5, "priceAtPurchase": 150 },
+        { "productId": "12", "quantity": 2, "priceAtPurchase": 100 }
+      ],
+      "totalAmount": 950,
+      "paymentDetails": {
+        "method": "Wallet",
+        "transactionId": "TXNWALLET5555",
+        "status": "paid"
+      },
+      "status": "cancelled",
+      "deliveryPersonId": null,
+      "deliveryDetails": {
+        "estimatedTime": null,
+        "deliveredAt": null
+      },
+      "createdAt": "2025-03-17T09:20:00Z",
+      "updatedAt": "2025-03-17T12:00:00Z"
+    }
+  ]
+  

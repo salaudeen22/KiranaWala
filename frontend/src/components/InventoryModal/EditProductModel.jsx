@@ -18,7 +18,7 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
   const updateProduct = async () => {
     try {
       const response = await fetch(
-        `http://localhost:6565/api/vendor/products/${updatedProduct.productId}`,
+        `http://localhost:6565/api/vendor/products/update-product/${updatedProduct._id}`,
         {
           method: "PUT",
           headers: {

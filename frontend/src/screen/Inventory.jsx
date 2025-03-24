@@ -22,7 +22,7 @@ const Inventory = () => {
   const fetchData = async () => {
     try {
       const response = await fetch(
-        "http://localhost:6565/api/vendor/products/",
+        "http://localhost:6565/api/vendor/products/inventory",
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },

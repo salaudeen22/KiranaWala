@@ -1,22 +1,59 @@
 import React, { useState } from "react";
+import { FiX, FiEdit2, FiTrash2, FiImage, FiTag, FiDollarSign, FiPercent, FiPackage, FiAlignLeft } from "react-icons/fi";
+import { FiUpload } from "react-icons/fi";
 
 const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) => {
-  const [updatedProduct, setUpdatedProduct] = useState({ ...product });
+  const [updatedProduct, setUpdatedProduct] = useState({ 
+    ...product,
+    images: product.images || [{ url: "" }] // Ensure images array exists
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUpdatedProduct({ ...updatedProduct, [name]: value });
   };
 
-  const handleImageChange = (e) => {
-    setUpdatedProduct({
-      ...updatedProduct,
-      images: [{ url: e.target.value }],
-    });
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await fetch("http://localhost:6565/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+
+      const data = await response.json();
+      if (data.imageUrl) {
+        setUpdatedProduct({
+          ...updatedProduct,
+          images: [{ url: data.imageUrl, altText: `Image of ${updatedProduct.name}` }]
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      alert("Image upload failed. Please try again.");
+    }
   };
 
   const updateProduct = async () => {
+    setIsSubmitting(true);
     try {
+      // Prepare final product data
+      const productToUpdate = {
+        ...updatedProduct,
+        price: Number(updatedProduct.price),
+        discount: Number(updatedProduct.discount) || 0,
+        stock: Number(updatedProduct.stock),
+        finalPrice: Number(updatedProduct.price) * (1 - (Number(updatedProduct.discount) / 100))
+      };
+
       const response = await fetch(
         `http://localhost:6565/api/vendor/products/update-product/${updatedProduct._id}`,
         {
@@ -24,24 +61,30 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(updatedProduct),
+          body: JSON.stringify(productToUpdate),
         }
       );
 
-      if (response.ok) {
-        alert("Product updated successfully!");
-        handleUpdateProduct();
-        setIsEditModalOpen(false);
-      } else {
-        alert("Error updating product.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error updating product");
       }
+
+      alert(data.message || "Product updated successfully!");
+      handleUpdateProduct();
+      setIsEditModalOpen(false);
     } catch (error) {
-      console.error("Error while updating product:", error);
-      alert("Error while updating product.");
+      console.error("Error:", error);
+      alert(error.message || "Error while updating product");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    
     try {
       const response = await fetch(
         `http://localhost:6565/api/vendor/products/${product.productId}`,
@@ -51,16 +94,18 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
         }
       );
 
-      if (response.ok) {
-        alert("Deleted Successfully");
-        handleUpdateProduct();
-        setIsEditModalOpen(false);
-      } else {
-        alert("Error deleting product.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error deleting product");
       }
+
+      alert(data.message || "Product deleted successfully");
+      handleUpdateProduct();
+      setIsEditModalOpen(false);
     } catch (error) {
-      console.error("Error while deleting product:", error);
-      alert("Error while deleting product.");
+      console.error("Error:", error);
+      alert(error.message || "Error while deleting product");
     }
   };
 
@@ -70,38 +115,241 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
   };
 
   return (
-    <div className="fixed z-50 inset-0 bg-black bg-opacity-40 backdrop-blur-md flex justify-center items-center">
-      <div className="bg-[#FEFBEF] p-6 rounded-lg shadow-lg w-[400px] relative">
-        <h2 className="text-[#E54D43] text-xl font-semibold mb-4">Edit Product</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Modal Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <div className="flex items-center">
+            <FiEdit2 className="text-indigo-600 mr-2" size={20} />
+            <h2 className="text-2xl font-bold text-gray-800">Edit Product</h2>
+          </div>
+          <button
+            onClick={() => setIsEditModalOpen(false)}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+            disabled={isSubmitting}
+          >
+            <FiX size={24} />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <label htmlFor="name">Product Name</label>
-          <input id="name" type="text" name="name" value={updatedProduct.name} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Product Name" required />
-          
-          <label htmlFor="price">Price</label>
-          <input id="price" type="number" name="price" value={updatedProduct.price} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Price" required />
-          
-          <label htmlFor="discount">Discount (%)</label>
-          <input id="discount" type="number" name="discount" value={updatedProduct.discount} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Discount (%)" />
-          
-          <label htmlFor="stock">Stock</label>
-          <input id="stock" type="number" name="stock" value={updatedProduct.stock} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Stock" required />
-          
-          <label htmlFor="category">Category</label>
-          <input id="category" type="text" name="category" value={updatedProduct.category} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Category" />
-          
-          <label htmlFor="description">Description</label>
-          <textarea id="description" name="description" value={updatedProduct.description} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Description" />
-          
-          <label htmlFor="imageUrl">Image URL</label>
-          <input id="imageUrl" type="text" name="imageUrl" value={updatedProduct.images?.[0]?.url || ""} onChange={handleImageChange} className="w-full p-2 border rounded-lg" placeholder="Image URL" />
-          {updatedProduct.images?.[0]?.url && (
-            <img src={updatedProduct.images[0].url} alt="Product Preview" className="mt-2 w-10 h-10 object-cover rounded-lg border" onError={(e) => (e.target.style.display = "none")} />
-          )}
-          <div className="flex justify-end space-x-3">
-            <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Cancel</button>
-            <button type="button" onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
-            <button type="submit" className="px-4 py-2 bg-[#E54D43] text-white rounded-lg hover:bg-[#D9B13B]">Save Changes</button>
+        {/* Modal Body */}
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            {/* Product Name */}
+            <div className="relative">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Product Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="name"
+                  type="text"
+                  name="name"
+                  value={updatedProduct.name}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Product Name"
+                  required
+                  disabled={isSubmitting}
+                />
+                <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Price and Discount */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Price */}
+              <div className="relative">
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price (₹) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="price"
+                    type="number"
+                    name="price"
+                    value={updatedProduct.price}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Price"
+                    min="0"
+                    step="0.01"
+                    required
+                    disabled={isSubmitting}
+                  />
+                  <FiDollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Discount */}
+              <div className="relative">
+                <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
+                  Discount (%)
+                </label>
+                <div className="relative">
+                  <input
+                    id="discount"
+                    type="number"
+                    name="discount"
+                    value={updatedProduct.discount}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Discount"
+                    min="0"
+                    max="100"
+                    disabled={isSubmitting}
+                  />
+                  <FiPercent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Stock and Category */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Stock */}
+              <div className="relative">
+                <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-1">
+                  Stock <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="stock"
+                    type="number"
+                    name="stock"
+                    value={updatedProduct.stock}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Stock"
+                    min="0"
+                    required
+                    disabled={isSubmitting}
+                  />
+                  <FiPackage className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  id="category"
+                  name="category"
+                  value={updatedProduct.category}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={isSubmitting}
+                >
+                  <option value="Grocery">Grocery</option>
+                  <option value="Dairy">Dairy</option>
+                  <option value="Snacks">Snacks</option>
+                  <option value="Personal Care">Personal Care</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="relative">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <div className="relative">
+                <textarea
+                  id="description"
+                  name="description"
+                  value={updatedProduct.description}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Product description"
+                  rows="3"
+                  disabled={isSubmitting}
+                />
+                <FiAlignLeft className="absolute left-3 top-4 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Product Image
+              </label>
+              <div className="flex items-center space-x-4">
+                <div className="flex-1">
+                  <div className="flex items-center justify-center w-full">
+                    <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <FiUpload className="w-6 h-6 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500">
+                          {updatedProduct.images?.[0]?.url ? 'Change image' : 'Upload image'}
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={isSubmitting}
+                      />
+                    </label>
+                  </div>
+                </div>
+                {updatedProduct.images?.[0]?.url && (
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={updatedProduct.images[0].url} 
+                      alt={updatedProduct.images[0].altText || "Product image"} 
+                      className="w-20 h-20 object-cover rounded-lg border"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/100';
+                        e.target.className = 'w-20 h-20 object-cover rounded-lg border bg-gray-100';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="pt-4 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
+              disabled={isSubmitting}
+            >
+              <FiTrash2 className="mr-2" />
+              Delete
+            </button>
+            <button
+              type="submit"
+              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FiEdit2 className="mr-2" />
+                  Save Changes
+                </>
+              )}
+            </button>
           </div>
         </form>
       </div>

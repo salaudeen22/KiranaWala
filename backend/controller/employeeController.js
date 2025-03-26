@@ -29,16 +29,29 @@ async function getEmployee(req, res) {
   }
 }
 
-async function updateEmployee(req, res) {
-  try {
-    const updatedEmployee = await employeeService.updateEmployee(req.params.id, req.body);
-    if (!updatedEmployee) return res.status(404).json({ message: "Employee not found" });
 
-    res.status(200).json({ message: "Employee updated successfully", updatedEmployee });
+const updateEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, role } = req.body;
+
+    // Only allow updating these fields
+    const updateData = { name, email, phone, role };
+    
+    const updatedEmployee = await employeeService.updateEmployee(id, updateData);
+    
+    if (!updatedEmployee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    res.status(200).json({ 
+      message: "Employee updated successfully", 
+      employee: updatedEmployee 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
 
 async function deleteEmployee(req, res) {
   try {

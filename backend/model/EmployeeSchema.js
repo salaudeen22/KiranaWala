@@ -8,7 +8,7 @@ const EmployeeSchema = new mongoose.Schema({
   role: { type: String, enum: ["manager", "employee"], required: true },
   retailerId: { type: mongoose.Schema.Types.ObjectId, ref: "Retailer", required: true },
   panCard: { type: String, required: true },
-  aadhaar: {
+  aadhaarCard: {
     type: String,
     required: true,
     unique: true,

@@ -1,54 +1,59 @@
-import { useNavigate } from "react-router-dom";
-import { FaTachometerAlt, FaBox, FaCalculator, FaUserEdit, FaUserFriends } from "react-icons/fa"; 
+import { useNavigate, useLocation } from "react-router-dom";
+import { 
+  FaTachometerAlt, 
+  FaBox, 
+  FaCalculator, 
+  FaUserEdit, 
+  FaUserFriends,
+  FaChevronRight
+} from "react-icons/fa";
 import { useSidebar } from "../../context/ToggleSideBar";
 
 const Sidebar = () => {
   const { isSidebarOpen } = useSidebar();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const menuItems = [
+    { path: "/home/dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
+    { path: "/home/inventory", icon: <FaBox />, label: "Inventory" },
+    { path: "/home/sales", icon: <FaCalculator />, label: "Billing" },
+    { path: "/home/usermanagment", icon: <FaUserFriends />, label: "User Management" },
+    { path: "/home/profile", icon: <FaUserEdit />, label: "Edit Profile" }
+  ];
 
   return (
     <div
-      className={`fixed top-16 left-0 z-40 h-full bg-amber-300 text-white p-6 transition-all duration-300 transform ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 bg-gradient-to-b from-amber-500 to-amber-600 text-white p-4 transition-all duration-300 ease-in-out ${
+        isSidebarOpen ? "translate-x-0 shadow-xl" : "-translate-x-full"
       }`}
     >
-      <ul className="space-y-4">
-        <li
-          className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"
-          onClick={() => navigate("/home/dashboard")} 
-        >
-          <FaTachometerAlt className="text-xl" />
-          <span className="text-lg">Dashboard</span>
-        </li>
-        <li
-          className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"
-          onClick={() => navigate("/home/inventory")} 
-        >
-          <FaBox className="text-xl" />
-          <span className="text-lg">Inventory</span>
-        </li>
-        <li
-          className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"
-          onClick={() => navigate("/home/sales")} 
-        >
-          <FaCalculator className="text-xl" />
-          <span className="text-lg">Billing</span>
-        </li>
-        <li
-          className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"
-          onClick={() => navigate("/home/usermanagment")} 
-        >
-          <FaUserFriends className="text-xl" />
-          <span className="text-lg">User Managment</span>
-        </li>
-        <li
-          className="flex items-center space-x-3 hover:bg-amber-200 p-2 rounded-lg"
-          onClick={() => navigate("/home/profile")} 
-        >
-          <FaUserEdit className="text-xl" />
-          <span className="text-lg">Edit Profile</span>
-        </li>
+      <div className="flex items-center justify-center mb-8 p-4">
+        <h2 className="text-xl font-bold text-white">Menu</h2>
+      </div>
+      
+      <ul className="space-y-2">
+        {menuItems.map((item) => (
+          <li
+            key={item.path}
+            className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 hover:bg-amber-400 hover:shadow-md cursor-pointer ${
+              location.pathname === item.path ? "bg-amber-700 shadow-inner" : ""
+            }`}
+            onClick={() => navigate(item.path)}
+          >
+            <div className="flex items-center space-x-3">
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-md font-medium">{item.label}</span>
+            </div>
+            <FaChevronRight className="text-sm opacity-70" />
+          </li>
+        ))}
       </ul>
+
+      {/* Footer area */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 text-center text-xs text-amber-100 border-t border-amber-400">
+        v1.0.0
+      </div>
     </div>
   );
 };

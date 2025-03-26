@@ -1,112 +1,152 @@
 import { useSidebar } from "../../context/ToggleSideBar";
 import { useUser } from "../../context/userContext";
-import { useState } from "react";
-import { useContext } from "react";
-import { CiSearch } from "react-icons/ci";
+import { useState, useEffect, useRef } from "react";
+import { FiSearch, FiSettings, FiLogOut } from "react-icons/fi";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { useNavigate } from "react-router-dom";
+import { RiDashboardLine } from "react-icons/ri";
+import { useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const NavBar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
+  const { userData } = useUser();
+  const dropdownRef = useRef(null);
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Add scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
-  const { userData } = useUser();
-  return (
-    <nav className="bg-white border-gray-200 dark:bg-amber-300 shadow-md fixed w-full top-0 z-30">
-      <div className="max-w-screen-xl flex items-center justify-between mx-auto p-4">
-        <GiHamburgerMenu
-          className="text-gray-500 dark:text-white mr-4"
-          onClick={toggleSidebar}
-        />
-        <a href="/" className="flex items-center space-x-3">
-          <span className="self-center text-2xl font-semibold text-gray-900 dark:text-white">
-            Kiranwalla
-          </span>
-        </a>
 
-        <div className="flex items-center justify-center flex-grow relative">
-          <div
-            className={`relative hidden md:block w-1/2 ${
-              menuOpen ? "absolute top-0 left-0 right-0 z-50" : ""
-            }`}
+  return (
+    <nav className={`fixed w-full top-0 z-30 transition-all duration-300 ${scrolled ? "bg-amber-500 shadow-lg" : "bg-amber-400 shadow-md"}`}>
+      <div className="max-w-screen-xl flex items-center justify-between mx-auto px-4 py-3">
+        {/* Left section - Hamburger and Logo */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg hover:bg-amber-600 transition-colors duration-200"
+            aria-label="Toggle sidebar"
           >
+            <GiHamburgerMenu className="text-white text-xl" />
+          </button>
+          
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="self-center text-2xl font-bold text-white">
+              Kiranwalla
+            </span>
+          </Link>
+        </div>
+
+        {/* Center section - Search (optional) */}
+        <div className="hidden md:flex items-center justify-center flex-grow mx-8">
+          <div className="relative w-full max-w-md">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <CiSearch className="text-gray-500 dark:text-white sm:hidden" />
+              <FiSearch className="text-amber-200" />
             </div>
-            {/* <input
+            <input
               type="text"
-              id="search-navbar"
-              className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-red-600 focus:border-red-600 dark:bg-#FEFBEF dark:border-gray-600 dark:text-black dark:focus:ring-red-600 dark:focus:border-red-600"
+              className="block w-full p-2 pl-10 text-sm text-white placeholder-amber-200 bg-amber-500 border border-amber-400 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-300 focus:outline-none transition-all"
               placeholder="Search..."
-            /> */}
+            />
           </div>
         </div>
 
-        <div className="relative">
+        {/* Right section - User dropdown */}
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={toggleDropdown}
-            className="flex text-sm bg-gray-800 rounded-full md:me-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
-            aria-expanded={dropdownOpen ? "true" : "false"}
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center space-x-2 focus:outline-none"
           >
-            <span className="sr-only">Open user menu</span>
-            <img
-              className="w-8 h-8 rounded-full"
-              src="https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg"
-              alt="user photo"
-            />
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium text-white">{userData?.name ?? "Guest"}</p>
+              <p className="text-xs text-amber-100">{userData?.email ?? "No email"}</p>
+            </div>
+            <div className="relative">
+              <img
+                className="w-8 h-8 rounded-full border-2 border-white"
+                src="https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg"
+                alt="User profile"
+              />
+              {dropdownOpen && (
+                <div className="absolute inset-0 rounded-full bg-black bg-opacity-20"></div>
+              )}
+            </div>
           </button>
 
-          {dropdownOpen && (
-            <div className="z-50 absolute right-0 mt-2 w-48 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-700 dark:divide-gray-600">
-              <div className="px-4 py-3">
-                <span className="block text-sm text-gray-900 dark:text-white">
-                  {userData?.name ?? "Guest"}
-                </span>
-                <span className="block text-sm text-gray-500 truncate dark:text-gray-400">
-                  {userData?.email ?? "No email"}
-                </span>
-              </div>
-              <ul className="py-2">
-                <li>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                  >
-                    Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                  >
-                    Settings
-                  </a>
-                </li>
-
-                <li>
-                  <a
-                    onClick={() => {
-                      handleLogout();
-                    }}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                  >
-                    Sign out
-                  </a>
-                </li>
-              </ul>
-            </div>
-          )}
+          <AnimatePresence>
+            {dropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="z-50 absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-lg shadow-xl overflow-hidden"
+              >
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900">
+                    {userData?.name ?? "Guest"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {userData?.email ?? "No email"}
+                  </p>
+                </div>
+                <ul className="py-1">
+                  <li>
+                    <Link
+                      to="/home/dashboard"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <RiDashboardLine className="mr-2" />
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/home/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <FiSettings className="mr-2" />
+                      Settings
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 transition-colors text-left"
+                    >
+                      <FiLogOut className="mr-2" />
+                      Sign out
+                    </button>
+                  </li>
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </nav>

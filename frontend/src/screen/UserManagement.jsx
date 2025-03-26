@@ -1,31 +1,38 @@
 import { motion } from "framer-motion";
-import { Plus, Search } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import EmployeeTable from "../components/layout/EmployeeTable";
+import EmployeeForm from "../components/layout/EmployeeForm";
+import SearchBar from "../components/layout/SearchBar";
 
 const UserManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [employeData, setEmployeData] = useState([]);
-  const [retailerId, setretailerId] = useState();
+  const [employeeData, setEmployeeData] = useState([]);
+  const [retailerId, setRetailerId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentEmployee, setCurrentEmployee] = useState(null);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     email: "",
     phone: "",
     role: "employee",
-    retailerId: retailerId,
+    retailerId: "",
     panCard: "",
     aadhaarCard: "",
-    profileImage: "",
+    profileImage: ""
   });
 
   useEffect(() => {
     const storedRetailerId = localStorage.getItem("retailId") || "";
-    setretailerId(storedRetailerId);
-    setNewEmployee((prev) => ({ ...prev, retailerId: storedRetailerId }));
-    fetchEmpData();
+    setRetailerId(storedRetailerId);
+    setNewEmployee(prev => ({ ...prev, retailerId: storedRetailerId }));
+    fetchEmployeeData();
   }, []);
 
-  const fetchEmpData = async () => {
+  const fetchEmployeeData = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch("http://localhost:6565/api/employees/", {
         method: "GET",
@@ -33,116 +40,268 @@ const UserManagement = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setEmployeData(data);
+        setEmployeeData(data);
       }
     } catch (error) {
-      console.log("Error", error);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!newEmployee.retailerId) {
-      console.log("Retailer ID is missing!");
-      return;
-    }
-    try {
-      const response = await fetch("http://localhost:6565/api/employees/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newEmployee),
-      });
-      if (response.ok) {
-        fetchEmpData();
-        setIsOpen(false);
-        setNewEmployee({ name: "", email: "", phone: "", retailerId, role: "employee", panCard: "", aadhaarCard: "", profileImage: "" });
-      }
-    } catch (error) {
-      console.log("Error adding employee:", error);
+      console.error("Error fetching employee data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+  
+    setIsLoading(true);
     const formData = new FormData();
     formData.append("image", file);
+  
     try {
       const response = await fetch("http://localhost:6565/api/upload", {
         method: "POST",
         body: formData,
       });
+  
+      if (!response.ok) throw new Error("Upload failed");
+  
       const data = await response.json();
       if (data.imageUrl) {
-        setNewEmployee((prev) => ({ ...prev, profileImage: data.imageUrl }));
+        setNewEmployee(prev => ({ ...prev, profileImage: data.imageUrl }));
       }
-      console.log("Image Sucess");
     } catch (error) {
-      console.log("Image upload failed", error);
+      console.error("Upload error:", error);
+      alert("Image upload failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleEditClick = (employee) => {
+    setCurrentEmployee(employee);
+    setIsEditOpen(true);
+    setNewEmployee({
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone,
+      role: employee.role,
+      retailerId: employee.retailerId,
+      panCard: employee.panCard,
+      aadhaarCard: employee.aadhaarCard,
+      profileImage: employee.profileImage
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!newEmployee.name || !newEmployee.email || !newEmployee.phone) {
+      alert("Please fill in all required fields");
+      return;
+    }
+  
+    setIsLoading(true);
+    
+    try {
+      const url = currentEmployee 
+        ? `http://localhost:6565/api/employees/${currentEmployee._id}`
+        : "http://localhost:6565/api/employees/add";
+      
+      const method = currentEmployee ? "PUT" : "POST";
+      
+      const requestBody = {
+        name: newEmployee.name,
+        email: newEmployee.email,
+        phone: newEmployee.phone,
+        role: newEmployee.role,
+        retailerId: newEmployee.retailerId,
+        panCard: newEmployee.panCard,
+        aadhaarCard: newEmployee.aadhaarCard,
+        userImage: newEmployee.profileImage
+      };
+  
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(requestBody),
+      });
+  
+      const responseData = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(responseData.message || "Failed to save employee");
+      }
+  
+      await fetchEmployeeData();
+      setIsOpen(false);
+      setIsEditOpen(false);
+      setNewEmployee({ 
+        name: "", 
+        email: "", 
+        phone: "", 
+        role: "employee", 
+        retailerId, 
+        panCard: "", 
+        aadhaarCard: "", 
+        profileImage: "" 
+      });
+      setCurrentEmployee(null);
+      
+    } catch (error) {
+      console.error("Error:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this employee?")) return;
+    
+    try {
+      const response = await fetch(`http://localhost:6565/api/employees/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete employee");
+      }
+
+      await fetchEmployeeData();
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert(error.message);
+    }
+  };
+
+  const filteredEmployees = employeeData.filter(emp => 
+    emp.name.toLowerCase().includes(search.toLowerCase()) ||
+    emp.email.toLowerCase().includes(search.toLowerCase()) ||
+    emp.phone.includes(search) ||
+    emp.role.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const resetForm = () => {
+    setNewEmployee({ 
+      name: "", 
+      email: "", 
+      phone: "", 
+      role: "employee", 
+      retailerId, 
+      panCard: "", 
+      aadhaarCard: "", 
+      profileImage: "" 
+    });
+    setCurrentEmployee(null);
+  };
+
   return (
-    <motion.div className="p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold">User Management</h1>
-        <button onClick={() => setIsOpen(true)} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded">
-          <Plus className="mr-2" size={16} /> Add Employee
-        </button>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="p-6 max-w-6xl mx-auto"
+    >
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+          <p className="text-sm text-gray-500">Manage your employees and their access</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setIsOpen(true)}
+          className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors"
+        >
+          <Plus className="mr-2" size={18} /> 
+          Add Employee
+        </motion.button>
       </div>
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-        <input
-          type="text"
-          placeholder="Search employees..."
-          className="pl-10 border rounded p-2 w-full"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-200">
-          <tr>
-            <th className="border p-2">Profile</th>
-            <th className="border p-2">ID</th>
-            <th className="border p-2">Name</th>
-            <th className="border p-2">Email</th>
-            <th className="border p-2">Role</th>
-            <th className="border p-2">panCard</th>
-            <th className="border p-2">aadhaarCard</th>
-          </tr>
-        </thead>
-        <tbody>
-          {employeData.filter((emp) => emp.name.toLowerCase().includes(search.toLowerCase())).map((emp) => (
-            <tr key={emp.id} className="text-center border-t">
-              <td className="border p-2"><img src={emp.userImage} className="h-1/2 w-1/2"></img></td>
-              <td className="border p-2">{emp._id}</td>
-              <td className="border p-2">{emp.name}</td>
-              <td className="border p-2">{emp.email}</td>
-              <td className="border p-2">{emp.role}</td>
-              <td className="border p-2">{emp.panCard}</td>
-              <td className="border p-2">{emp.aadhaarCard}</td>
 
+      <SearchBar search={search} setSearch={setSearch} />
 
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <EmployeeTable 
+        employees={filteredEmployees} 
+        isLoading={isLoading} 
+        handleEditClick={handleEditClick} 
+        handleDelete={handleDelete} 
+      />
+
+      {/* Add Employee Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h2 className="text-xl font-semibold mb-4">Add New Employee</h2>
-            <input className="border p-2 w-full mb-2" placeholder="Full Name" value={newEmployee.name} onChange={(e) => setNewEmployee((prev) => ({ ...prev, name: e.target.value }))} />
-            <input className="border p-2 w-full mb-2" placeholder="Email" type="email" value={newEmployee.email} onChange={(e) => setNewEmployee((prev) => ({ ...prev, email: e.target.value }))} />
-            <input className="border p-2 w-full mb-2" placeholder="Phone Number" type="tel" value={newEmployee.phone} onChange={(e) => setNewEmployee((prev) => ({ ...prev, phone: e.target.value }))} />
-            <select className="border p-2 w-full mb-4" value={newEmployee.role} onChange={(e) => setNewEmployee((prev) => ({ ...prev, role: e.target.value }))}>
-              <option value="manager">Manager</option>
-              <option value="employee">Employee</option>
-            </select>
-            <input className="border p-2 w-full mb-2" placeholder="PAN Card" type="text" value={newEmployee.panCard} onChange={(e) => setNewEmployee((prev) => ({ ...prev, panCard: e.target.value }))} />
-            <input className="border p-2 w-full mb-2" placeholder="Aadhaar Card" type="text" value={newEmployee.aadhaarCard} onChange={(e) => setNewEmployee((prev) => ({ ...prev, aadhaarCard: e.target.value }))} />
-            <input type="file" accept=".jpg,.png,.jpeg" onChange={handleImageUpload} />
-            <button onClick={handleSubmit} className="bg-green-500 text-white px-4 py-2 w-full rounded mt-2">Save Employee</button>
-            <button onClick={() => setIsOpen(false)} className="mt-2 text-red-500 w-full">Cancel</button>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Add New Employee</h2>
+              <button 
+                onClick={() => {
+                  setIsOpen(false);
+                  resetForm();
+                }}
+                className="text-gray-400 hover:text-gray-500 transition-colors"
+                disabled={isLoading}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <EmployeeForm 
+              employeeData={newEmployee}
+              handleSubmit={handleSubmit}
+              handleImageUpload={handleImageUpload}
+              setEmployeeData={setNewEmployee}
+              isLoading={isLoading}
+              onClose={() => {
+                setIsOpen(false);
+                resetForm();
+              }}
+              isEditMode={false}
+            />
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Edit Employee</h2>
+              <button 
+                onClick={() => {
+                  setIsEditOpen(false);
+                  resetForm();
+                }}
+                className="text-gray-400 hover:text-gray-500 transition-colors"
+                disabled={isLoading}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <EmployeeForm 
+              employeeData={newEmployee}
+              handleSubmit={handleSubmit}
+              handleImageUpload={handleImageUpload}
+              setEmployeeData={setNewEmployee}
+              isLoading={isLoading}
+              onClose={() => {
+                setIsEditOpen(false);
+                resetForm();
+              }}
+              isEditMode={true}
+            />
+          </motion.div>
         </div>
       )}
     </motion.div>

@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./screen/Dashboard";
 import HomeScreen from "./screen/HomeScreen";
 import Inventory from "./screen/Inventory";
@@ -11,15 +11,21 @@ import UserManagement from "./screen/UserManagement";
 const App = () => {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signUp" element={<SignUp />} />
+      <Route path="/signup" element={<SignUp />} />
+      
       <Route path="/home" element={<HomeScreen />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="sales" element={<Sales />} />
-        <Route path="usermanagment" element={<UserManagement/>}/>
+        <Route path="usermanagment" element={<UserManagement />} />
         <Route path="profile" element={<Profile />} />
       </Route>
+      
+      {/* Catch-all route for undefined paths */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };

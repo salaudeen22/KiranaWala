@@ -15,6 +15,8 @@ const Inventory = () => {
     expiryDate: "",
     images: [],
   });
+
+  
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -43,6 +45,7 @@ const Inventory = () => {
       alert("Error while fetching data.");
     }
   };
+  console.log(products);
 
   useEffect(() => {
     fetchData();
@@ -61,6 +64,31 @@ const Inventory = () => {
     const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const handleDeleteProduct = (id) => {
+    try
+    {
+      const response = fetch(
+        `http://localhost:6565/api/vendor/products/delete-product/${id}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+     
+      if (response.ok)
+      {
+        console.log("Product Deleted Successfully");
+        fetchData();
+        
+      }
+
+    }
+    catch (error)
+    {
+      console.log(error);
+    }
+  };
 
   // Calculate average rating
   const averageRating = products.length > 0 
@@ -177,7 +205,7 @@ const Inventory = () => {
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-md flex items-center justify-center">
                           {product.images?.length > 0 ? (
-                            <img className="h-10 w-10 rounded-md object-cover" src={product.images[0]} alt="" />
+                            <img className="h-10 w-10 rounded-md object-cover" src={product.images[0].url} alt="" />
                           ) : (
                             <span className="text-gray-400 text-xs">No Image</span>
                           )}
@@ -224,7 +252,9 @@ const Inventory = () => {
                       >
                         <FiEdit2 />
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      <button className="text-red-600 hover:text-red-900" 
+                      // onClick={handleDeleteProduct(product._id)}
+                      >
                         <FiTrash2 />
                       </button>
                     </td>

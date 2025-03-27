@@ -65,7 +65,9 @@ class ProductController {
 
   static async deleteProduct(req, res) {
     try {
+      console.log(req.params.id);
       await ProductService.deleteProduct(req.params.id);
+      console.log("Product deleted successfully!");
       res.json({ message: "Product deleted successfully!" });
     } catch (error) {
       res.status(500).json({ message: "Server error", error: error.message });

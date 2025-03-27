@@ -72,20 +72,20 @@ const Dashboard = () => {
 
   // Performance metrics
   const metrics = [
-    { name: "Revenue", value: "$256.82K", change: "+5.23%", trend: "up", icon: "💰" },
+    { name: "Revenue", value: "₹256.82K", change: "+5.23%", trend: "up", icon: "💰" },
     { name: "Orders", value: "1,234", change: "+12.5%", trend: "up", icon: "📦" },
     { name: "Customers", value: "3,456", change: "+8.2%", trend: "up", icon: "👥" },
-    { name: "Avg. Order", value: "$208", change: "-2.3%", trend: "down", icon: "📊" },
+    { name: "Avg. Order", value: "₹208", change: "-2.3%", trend: "down", icon: "📊" },
     { name: "Conversion", value: "3.2%", change: "+0.4%", trend: "up", icon: "🔄" },
     { name: "Returns", value: "5.1%", change: "-1.2%", trend: "down", icon: "↩️" }
   ];
 
   // Top products data
   const topProducts = [
-    { name: "Premium Headphones", sales: 342, revenue: "$45,231" },
-    { name: "Wireless Earbuds", sales: 298, revenue: "$32,456" },
-    { name: "Smart Watch", sales: 256, revenue: "$28,745" },
-    { name: "Bluetooth Speaker", sales: 187, revenue: "$21,098" }
+    { name: "Premium Headphones", sales: 342, revenue: "₹45,231" },
+    { name: "Wireless Earbuds", sales: 298, revenue: "₹32,456" },
+    { name: "Smart Watch", sales: 256, revenue: "₹28,745" },
+    { name: "Bluetooth Speaker", sales: 187, revenue: "₹21,098" }
   ];
 
   return (
@@ -187,7 +187,7 @@ const Dashboard = () => {
                     },
                     ticks: {
                       callback: function(value) {
-                        return '$' + value.toLocaleString();
+                        return '₹' + value.toLocaleString();
                       }
                     }
                   }
@@ -351,7 +351,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-800">Customer {order}</p>
-                  <p className="text-xs text-gray-500">2 items • ${(120 + order * 25).toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">2 items • ₹{(120 + order * 25).toFixed(2)}</p>
                 </div>
                 <div className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Completed</div>
               </div>

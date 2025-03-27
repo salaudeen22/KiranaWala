@@ -11,7 +11,7 @@ const EmployeeSchema = new mongoose.Schema({
   aadhaarCard: {
     type: String,
     required: true,
-    unique: true,
+    // unique: true,
     match: [/^\d{12}$/, "Invalid Aadhaar format"]
   }
 ,  

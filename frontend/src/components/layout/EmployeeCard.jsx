@@ -2,6 +2,7 @@ import React from "react";
 import { Mail, Phone, CreditCard, Fingerprint, Edit, Trash2 } from "lucide-react";
 
 const EmployeeCard = ({ employee, handleEditClick, handleDelete }) => {
+console.log(employee)
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
@@ -9,7 +10,7 @@ const EmployeeCard = ({ employee, handleEditClick, handleDelete }) => {
           <div className="flex-shrink-0 h-10 w-10">
             <img 
               className="h-10 w-10 rounded-full object-cover border" 
-              src={employee.profileImage || "https://via.placeholder.com/150"} 
+              src={employee.userImage || "https://www.freeiconspng.com/thumbs/profile-icon-png/profile-icon-9.png"} 
               alt={employee.name}
               onError={(e) => {
                 e.target.src = "https://via.placeholder.com/150";

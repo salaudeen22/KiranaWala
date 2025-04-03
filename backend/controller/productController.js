@@ -1,112 +1,132 @@
-const ProductService = require("../service/productService");
+const ProductService = require('../service/productService');
+const asyncHandler = require('express-async-handler');
+const AppError = require('../utils/appError');
 
-class ProductController {
-  static async getAllProducts(req, res) {
-    try {
-      const products = await ProductService.getAllProducts();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Get all products for current retailer
+// @route   GET /api/products
+// @access  Private
+exports.getAllProducts = asyncHandler(async (req, res) => {
+  const products = await ProductService.getProducts(
+    { isAvailable: true },
+    req.user.retailerId
+  );
+  res.status(200).json({ success: true, data: products });
+});
 
-  static async getTotalStockValue(req, res) {
-    try {
-      const totalStockValue = await ProductService.getTotalStockValue();
-      res.json({ totalStockValue });
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Get single product
+// @route   GET /api/products/:id
+// @access  Public
+exports.getProduct = asyncHandler(async (req, res) => {
+  // For public access, don't filter by retailerId
+  const product = await ProductService.getProductById(req.params.id);
+  res.status(200).json({ success: true, data: product });
+});
 
-  static async getLowStockProducts(req, res) {
-    try {
-      const products = await ProductService.getLowStockProducts();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Create product
+// @route   POST /api/products
+// @access  Private (Admin/Manager)
+exports.createProduct = asyncHandler(async (req, res) => {
+  const productData = {
+    ...req.body,
+    retailerId: req.user.retailerId || req.user.storesOwned?.[0]
+  };
+  const product = await ProductService.createProduct(productData);
+  res.status(201).json({ success: true, data: product });
+});
 
-  static async getOutOfStockProducts(req, res) {
-    try {
-      const products = await ProductService.getOutOfStockProducts();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Update product
+// @route   PUT /api/products/:id
+// @access  Private (Admin/Manager/Inventory Staff)
+exports.updateProduct = asyncHandler(async (req, res) => {
+  const product = await ProductService.updateProduct(
+    req.params.id,
+    req.user.retailerId,
+    req.body
+  );
+  res.status(200).json({ success: true, data: product });
+});
 
-  static async addProduct(req, res) {
-    try {
-      let productData = req.body;
-      productData.finalPrice = productData.price - (productData.price * (productData.discount || 0)) / 100;
+// @desc    Delete product
+// @route   DELETE /api/products/:id
+// @access  Private (Admin)
+exports.deleteProduct = asyncHandler(async (req, res) => {
+  await ProductService.deleteProduct(req.params.id, req.user.retailerId);
+  res.status(200).json({ success: true, data: {} });
+});
 
-      const product = await ProductService.addProduct(productData);
-      res.status(201).json({ message: "Product added successfully!", product });
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Update stock
+// @route   PATCH /api/products/:id/stock
+// @access  Private (Admin/Manager/Inventory Staff)
+exports.updateStock = asyncHandler(async (req, res) => {
+  const product = await ProductService.updateStock(
+    req.params.id,
+    req.user.retailerId,
+    req.body.stock
+  );
+  res.status(200).json({ success: true, data: product });
+});
 
-  static async updateProduct(req, res) {
-    try {
-      let productData = req.body;
-      if (productData.price || productData.discount !== undefined) {
-        productData.finalPrice = productData.price - (productData.price * (productData.discount || 0)) / 100;
-      }
+// @desc    Get low stock products
+// @route   GET /api/products/low-stock
+// @access  Private (Admin/Manager)
+exports.getLowStockProducts = asyncHandler(async (req, res) => {
+  const threshold = parseInt(req.query.threshold) || 5;
+  const products = await ProductService.getLowStockProducts(
+    threshold,
+    req.user.retailerId
+  );
+  res.status(200).json({ success: true, data: products });
+});
 
-      const product = await ProductService.updateProduct(req.params.id, productData);
-      res.json({ message: "Product updated successfully!", product });
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Search products
+// @route   GET /api/products/search/:query
+// @access  Public
+exports.searchProducts = asyncHandler(async (req, res) => {
+  const products = await ProductService.searchProducts(
+    req.params.query,
+    req.query.retailerId // For public search, pass retailerId as query param
+  );
+  res.status(200).json({ success: true, data: products });
+});
 
-  static async deleteProduct(req, res) {
-    try {
-      await ProductService.deleteProduct(req.params.id);
-      res.json({ message: "Product deleted successfully!" });
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Get all categories
+// @route   GET /api/products/categories/all
+// @access  Public
+exports.getAllCategories = asyncHandler(async (req, res) => {
+  const categories = await ProductService.getAllCategories(
+    req.query.retailerId // For public access, pass retailerId as query param
+  );
+  res.status(200).json({ success: true, data: categories });
+});
 
-  static async getSalesAnalytics(req, res) {
-    try {
-      const analytics = await ProductService.getSalesAnalytics();
-      res.json(analytics);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+// @desc    Get retailer's products
+// @route   GET /api/products/retailer/:retailerId
+// @access  Public
+exports.getProductsByRetailer = asyncHandler(async (req, res) => {
+  const products = await ProductService.getProducts(
+    { isAvailable: true },
+    req.params.retailerId
+  );
+  res.status(200).json({ success: true, data: products });
+});
 
-  static async getProfitMargin(req, res) {
-    try {
-      const profit = await ProductService.getProfitMargin();
-      res.json(profit);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+exports.getProductById = asyncHandler(async (req, res) => {
+  const product = await ProductService.getProductById(req.params.id, req.user?.retailerId);
+  res.status(200).json({ success: true, data: product });
+});
 
-  static async getTopSellingProducts(req, res) {
-    try {
-      const products = await ProductService.getTopSellingProducts();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
+exports.getProductByName = asyncHandler(async (req, res) => {
+  const product = await ProductService.getProductByName(
+    req.params.name,
+    req.user?.retailerId
+  );
+  res.status(200).json({ success: true, data: product });
+});
 
-  static async getDeadStock(req, res) {
-    try {
-      const products = await ProductService.getDeadStock();
-      res.json(products);
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  }
-}
-
-module.exports = ProductController;
+exports.getProductByBarcode = asyncHandler(async (req, res) => {
+  const product = await ProductService.getProductByBarcode(
+    req.params.barcode,
+    req.user?.retailerId
+  );
+  res.status(200).json({ success: true, data: product });
+});

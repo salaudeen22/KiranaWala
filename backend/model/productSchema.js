@@ -28,6 +28,13 @@ const ProductSchema = new mongoose.Schema({
       "Other",
     ],
   },
+ 
+barcode: { 
+  type: String, 
+  unique: true, 
+  sparse: true,
+  index: true 
+},
   price: {
     type: Number,
     required: true,
@@ -48,7 +55,7 @@ const ProductSchema = new mongoose.Schema({
     min: 0,
   },
   retailerId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Retailer",
     required: true,
   },
@@ -68,6 +75,16 @@ const ProductSchema = new mongoose.Schema({
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     totalReviews: { type: Number, default: 0 },
   },
+  barcode: { type: String, unique: true, sparse: true },
+  variants: [{
+    type: { type: String, required: true }, // "size", "color" etc
+    value: { type: String, required: true },
+    price: Number,
+    stock: Number
+  }],
+  taxRate: { type: Number, default: 0 }, // GST/VAT rate
+  isFeatured: { type: Boolean, default: false },
+  tags: [String], // For better searchability
   isAvailable: {
     type: Boolean,
     default: true,

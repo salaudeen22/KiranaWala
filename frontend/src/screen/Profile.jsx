@@ -54,7 +54,7 @@ const EditProfile = ({ handleUpdateProfile }) => {
       */
 
       alert("Profile updated successfully!");
-      handleUpdateProfile();
+      // handleUpdateProfile();
     } catch (error) {
       console.error("Error updating profile:", error);
       alert(error.message || "Error updating profile");

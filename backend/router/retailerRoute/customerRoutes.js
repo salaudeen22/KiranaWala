@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../../controller/customerController');
-const { customerProtect } = require('../../middleware/authMiddleware');
+const { customerProtect, protect } = require('../../middleware/authMiddleware');
+const retailerController=require("../../controller/retailerController");
 
 
 
@@ -37,9 +38,14 @@ router.post('/wishlist/:productId',customerProtect,  customerController.addToWis
 router.delete('/wishlist/:productId',customerProtect,  customerController.removeFromWishlist);
 
 
-//addition
+// Broadcast routes
 router.post('/broadcasts', customerProtect, customerController.createBroadcast);
 router.get('/broadcasts', customerProtect, customerController.getCustomerBroadcasts);
 router.get('/broadcasts/:id', customerProtect, customerController.getBroadcastDetails);
 router.patch('/broadcasts/:id/cancel', customerProtect, customerController.cancelBroadcast);
+
+// Add retailer-specific routes
+router.get('/retailer/broadcasts', protect, retailerController.getAvailableBroadcasts);
+router.patch('/retailer/broadcasts/:id/accept', protect, retailerController.acceptBroadcast);
+// router.patch('/retailer/broadcasts/:id/complete', protect, retailerController.completeBroadcast);
 module.exports = router;

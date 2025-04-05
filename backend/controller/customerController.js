@@ -5,6 +5,8 @@ const AppError = require('../utils/appError');
 const bcrypt = require('bcryptjs');
 const CustomerService=require("../service/customerService");
 const { v4: uuidv4 } = require('uuid');
+const Product=require("../model/productSchema");
+const Retailer=require("../model/vendorSchema");
 // const customerController = require("../controller/customerController");
 
 const  Broadcast=require("../model/BroadcastSchema");
@@ -260,18 +262,132 @@ exports.removeFromWishlist = asyncHandler(async (req, res, next) => {
 // @desc    Create product broadcast
 // @route   POST /api/customers/broadcasts
 // @access  Private
-exports.createBroadcast = asyncHandler(async (req, res, next) => {
-  const { products, coordinates } = req.body;
+// exports.createBroadcast = asyncHandler(async (req, res, next) => {
+//   const { products, coordinates, paymentDetails, deliveryAddress } = req.body;
   
-  if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-    return next(new AppError('Valid coordinates are required', 400));
+//   // Validate required fields
+//   if (!products || !coordinates || !paymentDetails || !deliveryAddress) {
+//     return next(new AppError('Missing required fields', 400));
+//   }
+
+//   // Calculate totals with proper error handling
+//   let totalAmount, grandTotal;
+//   try {
+//     totalAmount = products.reduce((sum, product) => {
+//       if (!product.priceAtPurchase) {
+//         throw new AppError('priceAtPurchase is required for all products', 400);
+//       }
+//       return sum + (product.priceAtPurchase * product.quantity);
+//     }, 0);
+
+//     // Calculate grand total (including tax/delivery)
+//     const taxRate = 0.05; // 5% tax
+//     const deliveryCharge = 20; // Fixed delivery charge
+//     grandTotal = totalAmount * (1 + taxRate) + deliveryCharge;
+//   } catch (err) {
+//     return next(err);
+//   }
+
+//   const broadcast = await CustomerService.createBroadcast({
+//     customerId: req.user.id,
+//     products: products.map(p => ({
+//       productId: p.productId,
+//       quantity: p.quantity,
+//       priceAtPurchase: p.priceAtPurchase
+//     })),
+//     coordinates,
+//     paymentDetails,
+//     deliveryAddress,
+//     totalAmount,
+//     grandTotal
+//   });
+
+//   res.status(201).json({
+//     success: true,
+//     data: broadcast
+//   });
+// });
+exports.createBroadcast = asyncHandler(async (req, res, next) => {
+  const { products, coordinates, paymentMethod, deliveryAddress } = req.body;
+
+  // Validate required fields
+  if (!deliveryAddress || !deliveryAddress.state) {
+    return next(new AppError('State is required in delivery address', 400));
   }
 
-  const broadcast = await CustomerService.createBroadcast(
-    req.user.id,
-    products,
-    coordinates
-  );
+  // Validate all required delivery address fields
+  const requiredAddressFields = ['street', 'city', 'state', 'pincode', 'contactNumber'];
+  const missingFields = requiredAddressFields.filter(field => !deliveryAddress[field]);
+  
+  if (missingFields.length > 0) {
+    return next(new AppError(
+      `Missing required delivery address fields: ${missingFields.join(', ')}`, 
+      400
+    ));
+  }
+  
+  // 1. Validate products and calculate totals
+  const productDocs = await Product.find({
+    _id: { $in: products.map(p => p.productId) }
+  }).lean();
+  
+  if (productDocs.length !== products.length) {
+    return next(new AppError("Some products not found", 404));
+  }
+
+  // 2. Calculate totals with current prices
+  const processedProducts = products.map(item => {
+    const product = productDocs.find(p => p._id.equals(item.productId));
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      priceAtPurchase: product.price // Store current price
+    };
+  });
+
+  const subtotal = processedProducts.reduce((sum, item) => 
+    sum + (item.priceAtPurchase * item.quantity), 0);
+  
+  // 3. Create broadcast
+  const broadcast = await Broadcast.create({
+    customerId: req.user.id,
+    products: processedProducts,
+    location: {
+      type: "Point",
+      coordinates
+    },
+    paymentDetails: {
+      method: paymentMethod,
+      status: "pending"
+    },
+    deliveryAddress,
+    totalAmount: subtotal,
+    grandTotal: subtotal * 1.05 + 20, // 5% tax + 20 delivery fee
+    status: "pending"
+  });
+
+  // 4. Find nearby retailers (optimized query)
+  const retailers = await Retailer.find({
+    "location.coordinates": {
+      $geoWithin: {
+        $centerSphere: [coordinates, 5 / 6378.1] // 5km radius
+      }
+    },
+    isActive: true,
+    "serviceAreas.pincode": deliveryAddress.pincode
+  }).select('_id name');
+
+  // 5. Add to potential retailers (without await for better performance)
+  Broadcast.findByIdAndUpdate(broadcast._id, {
+    $set: { potentialRetailers: retailers }
+  }).exec();
+
+  // 6. Real-time notification (using Socket.io if configured)
+  if (io) {
+    retailers.forEach(retailer => {
+      io.to(`retailer_${retailer._id}`).emit('new_broadcast', broadcast);
+    });
+  }
 
   res.status(201).json({
     success: true,

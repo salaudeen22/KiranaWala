@@ -139,6 +139,9 @@ EmployeeSchema.pre("save", async function(next) {
 
 // Password comparison method
 EmployeeSchema.methods.comparePassword = async function(candidatePassword) {
+  console.log('Comparing passwords:');
+  console.log('Candidate:', candidatePassword);
+  console.log('Stored hash:', this.password);
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

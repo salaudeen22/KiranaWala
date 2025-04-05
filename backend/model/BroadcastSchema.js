@@ -1,82 +1,116 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const BroadcastSchema = new mongoose.Schema({
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Customer",
+    ref: 'Customer',
     required: true
   },
+  retailerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Retailer'
+  },
   products: [{
-    productId: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "Product", 
-      required: true 
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true
     },
-    quantity: { 
-      type: Number, 
-      required: true, 
-      min: 1 
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
     },
     priceAtPurchase: {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     }
   }],
   location: {
     type: {
       type: String,
-      default: "Point",
-      enum: ["Point"]
+      enum: ['Point'],
+      default: 'Point'
     },
     coordinates: {
-      type: [Number],  // [longitude, latitude]
+      type: [Number],
       required: true
     }
   },
   status: {
     type: String,
-    enum: ["pending", "accepted", "preparing", "ready_for_pickup", "completed", "cancelled", "failed"],
-    default: "pending"
-  },
-  retailerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Retailer"
-  },
-  deliveryPersonId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Delivery"
-  },
-  totalAmount: {
-    type: Number,
-    required: true
-  },
-  deliveryFee: {
-    type: Number,
-    default: 0
-  },
-  grandTotal: {
-    type: Number,
-    required: true
+    enum: ['pending', 'accepted', 'rejected', 'completed', 'cancelled'],
+    default: 'pending'
   },
   paymentDetails: {
     method: {
       type: String,
-      enum: ["COD", "UPI", "Card", "Wallet"],
+      enum: ['UPI', 'Card', 'Wallet', 'Cash on Delivery'],
       required: true
     },
+    transactionId: String,
     status: {
       type: String,
-      enum: ["pending", "paid", "failed"],
-      default: "pending"
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending'
     }
   },
-  expiryTime: {
+  totalAmount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  grandTotal: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  deliveryAddress: {
+    street: {
+      type: String,
+      required: [true, 'Street address is required']
+    },
+    city: {
+      type: String,
+      required: [true, 'City is required']
+    },
+    state: {
+      type: String,
+      required: [true, 'State is required'] // This is causing the error
+    },
+    pincode: {
+      type: String,
+      required: [true, 'Pincode is required'],
+      validate: {
+        validator: function(v) {
+          return /^\d{6}$/.test(v);
+        },
+        message: props => `${props.value} is not a valid pincode!`
+      }
+    },
+    contactNumber: {
+      type: String,
+      required: [true, 'Contact number is required'],
+      validate: {
+        validator: function(v) {
+          return /^[6-9]\d{9}$/.test(v);
+        },
+        message: props => `${props.value} is not a valid phone number!`
+      }
+    }
+  },
+  createdAt: {
     type: Date,
-    default: () => new Date(Date.now() + 30*60*1000) // 30 minutes
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-}, { timestamps: true });
+});
 
-// Geospatial index for nearby queries
-BroadcastSchema.index({ location: "2dsphere" });
+BroadcastSchema.index({ location: '2dsphere' });
 
+// Prevent OverwriteModelError
 module.exports = mongoose.models.Broadcast || mongoose.model('Broadcast', BroadcastSchema);

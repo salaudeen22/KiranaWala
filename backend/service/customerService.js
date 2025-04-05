@@ -3,6 +3,7 @@ const AppError = require("../utils/appError");
 const { signToken } = require("../utils/auth");
 
 const Broadcast=require("../model/BroadcastSchema");
+const Retailer=require("../model/vendorSchema");
 
 class CustomerService {
   // Register new customer
@@ -196,26 +197,47 @@ class CustomerService {
    // @desc    Create product broadcast
   // @route   POST /api/customers/broadcasts
   // @access  Private
-  static async createBroadcast(userId, products, coordinates) {
-    // Validate products
-    if (!products || products.length === 0) {
-      throw new AppError("At least one product is required", 400);
-    }
+  
 
-    // Create broadcast
-    const broadcast = await Broadcast.create({
-      customerId: userId,
-      products,
-      location: {
-        type: "Point",
-        coordinates
-      },
-      status: "pending"
-    });
+static async createBroadcast({
+  customerId,
+  products,
+  coordinates,
+  paymentDetails,
+  deliveryAddress,
+  totalAmount,
+  grandTotal
+}) {
+  // Validate products
+  if (!products || products.length === 0) {
+    throw new AppError('At least one product is required', 400);
+  }
 
+  // Verify all products have priceAtPurchase
+  const invalidProducts = products.filter(p => !p.priceAtPurchase);
+  if (invalidProducts.length > 0) {
+    throw new AppError('priceAtPurchase is required for all products', 400);
+  }
+
+  // Create broadcast
+  const broadcast = await Broadcast.create({
+    customerId,
+    products,
+    location: {
+      type: 'Point',
+      coordinates
+    },
+    paymentDetails,
+    deliveryAddress,
+    totalAmount,
+    grandTotal,
+    status: 'pending'
+  });
+
+  try {
     // Find nearby retailers (5km radius)
     const retailers = await Retailer.find({
-      location: {
+      "location.coordinates": {
         $nearSphere: {
           $geometry: {
             type: "Point",
@@ -225,14 +247,18 @@ class CustomerService {
         }
       },
       isActive: true
-    }).select("_id");
+    }).select('_id');
 
     // Update broadcast with potential retailers
     broadcast.potentialRetailers = retailers.map(r => ({ retailerId: r._id }));
     await broadcast.save();
 
     return broadcast;
+  } catch (err) {
+    console.error("Error finding nearby retailers:", err);
+    throw new AppError("Error processing broadcast", 500);
   }
+}
 
   // @desc    Get customer's active broadcasts
   // @route   GET /api/customers/broadcasts

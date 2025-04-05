@@ -1,26 +1,63 @@
 const Product = require('../model/productSchema');
 const AppError = require('../utils/appError');
-const mongoose = require('mongoose');
 
 class ProductService {
-  // Create product with retailer validation
-  static async createProduct(productData) {
-    return await Product.create(productData);
+  // Public methods
+  static async getPublicProducts(retailerId) {
+    return await Product.find({ 
+      retailerId,
+      isAvailable: true 
+    }).select('-internalNotes -costPrice');
   }
 
-  // Get products with retailer filter
-  static async getProducts(filter = {}, retailerId) {
-    return await Product.find({ ...filter, retailerId });
-  }
-
-  // Get single product with retailer check
-  static async getProductById(productId, retailerId) {
-    const product = await Product.findOne({ _id: productId, retailerId });
+  static async getPublicProduct(retailerId, productId) {
+    const product = await Product.findOne({ 
+      _id: productId,
+      retailerId,
+      isAvailable: true 
+    }).select('-internalNotes -costPrice');
+    
     if (!product) throw new AppError('Product not found', 404);
     return product;
   }
 
-  // Update product with retailer validation
+  static async searchPublicProducts(retailerId, query) {
+    return await Product.find({
+      retailerId,
+      isAvailable: true,
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+        { tags: { $regex: query, $options: 'i' } }
+      ]
+    }).select('-internalNotes -costPrice');
+  }
+
+  static async getPublicCategories(retailerId) {
+    return await Product.distinct('category', { 
+      retailerId,
+      isAvailable: true 
+    });
+  }
+
+  // Protected methods
+  static async getProductsForRetailer(retailerId) {
+    return await Product.find({ retailerId });
+  }
+
+  static async getProductById(productId, retailerId) {
+    const product = await Product.findOne({ 
+      _id: productId,
+      retailerId 
+    });
+    if (!product) throw new AppError('Product not found', 404);
+    return product;
+  }
+
+  static async createProduct(productData) {
+    return await Product.create(productData);
+  }
+
   static async updateProduct(productId, retailerId, updateData) {
     const product = await Product.findOneAndUpdate(
       { _id: productId, retailerId },
@@ -31,83 +68,63 @@ class ProductService {
     return product;
   }
 
-  // Update stock with retailer validation
-  static async updateStock(productId, retailerId, newStock) {
-    const product = await Product.findOne({ _id: productId, retailerId });
-    if (!product) throw new AppError('Product not found', 404);
-
-    product.stock = newStock;
-    await product.save();
-    return product;
-  }
-
-  // Get low stock products for retailer
-  static async getLowStockProducts(threshold = 5, retailerId) {
-    return await Product.find({ 
-      stock: { $lt: threshold },
-      retailerId 
-    }).sort({ stock: 1 });
-  }
-
-  // Search products within retailer's inventory
-  static async searchProducts(query, retailerId) {
-    return await Product.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } },
-        { tags: { $regex: query, $options: 'i' } }
-      ],
-      retailerId,
-      isAvailable: true
-    });
-  }
-
-  // Get all categories for retailer
-  static async getAllCategories(retailerId) {
-    return await Product.distinct('category', { retailerId });
-  }
-
-  // Delete product with retailer validation
   static async deleteProduct(productId, retailerId) {
     const product = await Product.findOneAndDelete({ 
       _id: productId, 
       retailerId 
     });
     if (!product) throw new AppError('Product not found or not authorized', 404);
-    return { success: true };
+    return product;
   }
 
-  // Get product by ID or barcode
-
-  static async getProductById(productId, retailerId) {
-    const query = { _id: productId };
-    if (retailerId) query.retailerId = retailerId;
-    
-    const product = await Product.findOne(query);
+  static async updateStock(productId, retailerId, newStock) {
+    const product = await Product.findOneAndUpdate(
+      { _id: productId, retailerId },
+      { stock: newStock },
+      { new: true }
+    );
     if (!product) throw new AppError('Product not found', 404);
     return product;
   }
 
-  // Get product by name or barcode
+  static async getLowStockProducts(retailerId, threshold = 5) {
+    return await Product.find({ 
+      retailerId,
+      stock: { $lt: threshold }
+    }).sort({ stock: 1 });
+  }
 
-  static async getProductByName(name, retailerId) {
-    const query = { 
-      name: { $regex: new RegExp(name, 'i') } // Case-insensitive search
-    };
-    if (retailerId) query.retailerId = retailerId;
+  static async searchProducts(retailerId, query) {
+    return await Product.find({
+      retailerId,
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+        { category: { $regex: query, $options: 'i' } },
+        { tags: { $regex: query, $options: 'i' } },
+        { barcode: query } // Exact match for barcode
+      ]
+    });
+  }
 
-    const product = await Product.findOne(query);
+  static async getCategories(retailerId) {
+    return await Product.distinct('category', { retailerId });
+  }
+
+  static async getProductByName(retailerId, name) {
+    const product = await Product.findOne({ 
+      retailerId,
+      name: { $regex: new RegExp(name, 'i') }
+    });
     if (!product) throw new AppError('Product not found', 404);
     return product;
   }
 
-  // Get product by barcode
-
-  static async getProductByBarcode(barcode, retailerId) {
-    const query = { barcode };
-    if (retailerId) query.retailerId = retailerId;
-
-    const product = await Product.findOne(query);
+  static async getProductByBarcode(retailerId, barcode) {
+    const product = await Product.findOne({ 
+      retailerId,
+      barcode 
+    });
     if (!product) throw new AppError('Product not found', 404);
     return product;
   }

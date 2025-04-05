@@ -2,14 +2,15 @@ const employeeService = require("../service/employeeService");
 const { generateTemporaryPassword } = require("../utils/helpers");
 const mongoose=require('mongoose');
 const jwt = require("jsonwebtoken");
+const Employee=require("../model/EmployeeSchema");
+const bcrypt=require("bcrypt");
 
 module.exports = {
   // Create employee
   async addEmployee(req, res) {
     try {
-      const tempPassword = generateTemporaryPassword();
-      console.log(tempPassword);
-      const employeeData = { ...req.body, password: tempPassword };
+     
+      const employeeData = req.body;
       
       const employee = await employeeService.createEmployee(employeeData);
       res.status(201).json({
@@ -123,23 +124,71 @@ module.exports = {
   },
 
   // Employee login
- async loginEmployee (req, res, next)  {
+
+  async loginEmployee(req, res, next) {
     try {
         const { email, password } = req.body;
-
-        const result = await employeeService.loginEmployee(email, password,res);
-        console.log('Employee login result:', result);
         
-       
+        // 1. Check if email and password exist
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide email and password'
+            });
+        }
 
-        res.status(200).json(result);
-    } catch (err) {
-        res.status(401).json({
-            status: 'fail',
-            message: err.message
+        // 2. Find employee with password field
+        const employee = await Employee.findOne({ email })
+            .select('+password +employmentDetails.isActive');
+
+        if (!employee) {
+            return res.status(401).json({
+                success: false,
+                message: 'Incorrect email or password'
+            });
+        }
+
+        // 3. Check if password is correct
+        const isMatch = await bcrypt.compare(password, employee.password);
+        
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Incorrect email or password'
+            });
+        }
+
+        // 4. Check if account is active
+        if (!employee.employmentDetails.isActive) {
+            return res.status(401).json({
+                success: false,
+                message: 'Account deactivated. Please contact admin.'
+            });
+        }
+
+        // 5. Update last login
+        employee.lastLogin = Date.now();
+        await employee.save();
+
+        // 6. Generate token
+        const token = jwt.sign(
+            { id: employee._id },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN }
+        );
+
+        // 7. Remove password from output
+        employee.password = undefined;
+
+        res.status(200).json({
+            success: true,
+            token,
+            data: employee.formattedDetails // Use formattedDetails to avoid sending sensitive data
         });
+    } catch (err) {
+        next(err);
     }
-  },
+},
 
   // Reset password
   async resetPassword(req, res) {

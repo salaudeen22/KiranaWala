@@ -321,8 +321,7 @@ const RetailerSchema = new mongoose.Schema(
   }
 );
 
-// GeoJSON index for location-based queries
-RetailerSchema.index({ "location.coordinates": "2dsphere" });
+
 
 // Text index for search
 RetailerSchema.index({
@@ -372,5 +371,6 @@ RetailerSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 RetailerSchema.virtual("formattedRetailerId").get(function () {
   return `RET-${this.retailerId.toString().padStart(5, "0")}`;
 });
+RetailerSchema.index({ "location.coordinates": "2dsphere" });
 
 module.exports = mongoose.model("Retailer", RetailerSchema);

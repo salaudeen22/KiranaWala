@@ -6,12 +6,16 @@ const mongoose=require("mongoose");
 const jwt = require("jsonwebtoken");
 
 class EmployeeService {
+
+
+
   // Create new employee
   // EmployeeService.js
   async createEmployee(employeeData) {
     const session = await mongoose.startSession();
     session.startTransaction();
-
+    // console.log("employye1");
+    // console.log(employeeData);
     try {
       // 1. Verify retailer exists
       const retailer = await Retailer.findById(employeeData.retailerId).session(
@@ -21,6 +25,7 @@ class EmployeeService {
 
       // 2. Create and save employee
       const employee = new Employee(employeeData);
+      console.log(employee);
       await employee.save({ session });
 
       // 3. Add to retailer's employees array

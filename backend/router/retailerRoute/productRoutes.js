@@ -3,33 +3,33 @@ const router = express.Router();
 const productController = require('../../controller/productController');
 const authMiddleware = require('../../middleware/authMiddleware');
 
+// Public routes
+router.get('/public/:retailerId', productController.getPublicProductsByRetailer);
+router.get('/public/:retailerId/:id', productController.getPublicProduct);
+router.get('/public/:retailerId/search/:query', productController.searchPublicProducts);
+router.get('/public/:retailerId/categories', productController.getPublicCategories);
 
-
-// Protected routes
+// Protected routes (require authentication)
 router.use(authMiddleware.protect);
 
-// Public routes
-router.get('/', productController.getAllProducts);
-router.get('/:id', productController.getProduct);
-router.get('/search/:query', productController.searchProducts);
-router.get('/categories/all', productController.getAllCategories);
-router.get('/retailer/:retailerId', productController.getProductsByRetailer);
-
-router.get('/by-id/:id', productController.getProductById); // For MongoDB ObjectId
-router.get('/by-name/:name', productController.getProductByName); // For product name search
-router.get('/by-barcode/:barcode', productController.getProductByBarcode); // For barcode search
-
-// Specific routes before parameterized routes
-router.get('/low-stock', 
-  authMiddleware.authorize('admin', 'manager'), 
-  productController.getLowStockProducts
-);
-
-// Product management routes
+// Retailer-specific product management
 router.post('/', 
   authMiddleware.authorize('admin', 'manager'), 
   productController.createProduct
 );
+
+router.get('/', productController.getAllProductsForRetailer);
+router.get('/low-stock', 
+  authMiddleware.authorize('admin', 'manager'), 
+  productController.getLowStockProducts
+);
+router.get('/search/:query', productController.searchProducts);
+router.get('/categories', productController.getCategories);
+
+router.get('/:id', productController.getProduct);
+router.get('/by-name/:name', productController.getProductByName);
+router.get('/by-barcode/:barcode', productController.getProductByBarcode);
+
 router.put('/:id', 
   authMiddleware.authorize('admin', 'manager', 'inventory_staff'), 
   productController.updateProduct

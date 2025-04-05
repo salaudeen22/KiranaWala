@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const retailerController = require('../../controller/retailerController');
+const authMiddleware=require("../../middleware/authMiddleware")
 
+
+router.use(authMiddleware.protect);
 // Basic CRUD routes
 router.post('/', retailerController.createRetailer);
 router.get('/', retailerController.getAllRetailers);

@@ -3,23 +3,28 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FiUser, FiMail, FiLock, FiMapPin, FiPhone, 
-  FiFileText, FiChevronLeft, FiChevronRight, FiTruck 
+  FiFileText, FiChevronLeft, FiChevronRight, FiTruck,
+  FiHome, FiTag
 } from "react-icons/fi";
 import { FaStore, FaCheckCircle } from "react-icons/fa";
 
 const VendorSignUp = () => {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
+  const [businessType, setBusinessType] = useState("grocery");
   const [ownerId, setOwnerId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
   const [phone, setPhone] = useState("");
-  const [gstNumber, setGstNumber] = useState("");
-  const [fssaiNumber, setFssaiNumber] = useState("");
-  const [businessLicense, setBusinessLicense] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [selfDelivery, setSelfDelivery] = useState(false);
   const [partneredDelivery, setPartneredDelivery] = useState(true);
+  const [deliveryRadius, setDeliveryRadius] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -31,7 +36,7 @@ const VendorSignUp = () => {
     
     try {
       const response = await fetch(
-        "http://localhost:6565/api/vendor/auth/register",
+        "http://localhost:6565/api/retailers",
         {
           method: "POST",
           headers: {
@@ -39,24 +44,47 @@ const VendorSignUp = () => {
           },
           body: JSON.stringify({
             name,
+            businessType,
             ownerId,
-            email,
             password,
-            location: { address },
-            phone,
-            registrationDetails: { gstNumber, fssaiNumber, businessLicense },
-            deliveryOptions: { selfDelivery, partneredDelivery },
+            location: { 
+              address,
+              city,
+              state,
+              pincode,
+              coordinates: {
+                type: "Point",
+                coordinates: [parseFloat(longitude), parseFloat(latitude)]
+              }
+            },
+            contact: {
+              phone,
+              email
+            },
+            deliveryOptions: { 
+              selfDelivery, 
+              partneredDelivery,
+              deliveryRadius
+            },
+            settings: {
+              autoAcceptOrders: true,
+              lowStockThreshold: 5,
+              notifyLowStock: true,
+              orderConfirmationSMS: true,
+              deliveryUpdatesSMS: true,
+              inventoryManagement: "manual"
+            }
           }),
         }
       );
       
       const json = await response.json();
       
-      if (response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         setSuccess(true);
         setTimeout(() => navigate("/login"), 1500);
       } else {
-        alert("Error: " + json.message);
+        alert("Error: " + (json.message || "Registration failed"));
       }
     } catch (error) {
       console.error("Sign Up Error:", error);
@@ -111,7 +139,7 @@ const VendorSignUp = () => {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${step >= 3 ? 'bg-white text-blue-600' : 'border-2 border-blue-200'}`}>
                   3
                 </div>
-                <span>Legal Documents</span>
+                <span>Location & Delivery</span>
               </div>
             </div>
           </div>
@@ -123,12 +151,12 @@ const VendorSignUp = () => {
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               {step === 1 && 'Create Vendor Account'}
               {step === 2 && 'Business Information'}
-              {step === 3 && 'Legal Documents'}
+              {step === 3 && 'Location & Delivery Options'}
             </h2>
             <p className="text-gray-600">
               {step === 1 && 'Fill in your basic information to get started'}
               {step === 2 && 'Tell us about your business'}
-              {step === 3 && 'Upload your business documents'}
+              {step === 3 && 'Set your location and delivery preferences'}
             </p>
           </div>
 
@@ -162,7 +190,7 @@ const VendorSignUp = () => {
                     <div className="space-y-1">
                       <label className="text-gray-700 font-medium">Vendor Name</label>
                       <div className="relative">
-                        <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <FaStore className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
                           type="text"
                           value={name}
@@ -171,6 +199,26 @@ const VendorSignUp = () => {
                           placeholder="Your store name"
                           required
                         />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-gray-700 font-medium">Business Type</label>
+                      <div className="relative">
+                        <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <select
+                          value={businessType}
+                          onChange={(e) => setBusinessType(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none"
+                          required
+                        >
+                          <option value="grocery">Grocery Store</option>
+                          <option value="restaurant">Restaurant</option>
+                          <option value="pharmacy">Pharmacy</option>
+                          <option value="electronics">Electronics</option>
+                          <option value="clothing">Clothing</option>
+                          <option value="other">Other</option>
+                        </select>
                       </div>
                     </div>
 
@@ -224,6 +272,21 @@ const VendorSignUp = () => {
                 {step === 2 && (
                   <div className="space-y-4">
                     <div className="space-y-1">
+                      <label className="text-gray-700 font-medium">Phone Number</label>
+                      <div className="relative">
+                        <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                          placeholder="Contact number"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
                       <label className="text-gray-700 font-medium">Address</label>
                       <div className="relative">
                         <FiMapPin className="absolute left-3 top-4 text-gray-400" />
@@ -238,18 +301,86 @@ const VendorSignUp = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-gray-700 font-medium">Phone</label>
-                      <div className="relative">
-                        <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                          placeholder="Contact number"
-                          required
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-gray-700 font-medium">City</label>
+                        <div className="relative">
+                          <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="City"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-gray-700 font-medium">State</label>
+                        <div className="relative">
+                          <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="State"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-gray-700 font-medium">Pincode</label>
+                        <div className="relative">
+                          <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            value={pincode}
+                            onChange={(e) => setPincode(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Pincode"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {step === 3 && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-gray-700 font-medium">Latitude</label>
+                        <div className="relative">
+                          <FiMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="number"
+                            step="any"
+                            value={latitude}
+                            onChange={(e) => setLatitude(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="e.g. 19.0760"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-gray-700 font-medium">Longitude</label>
+                        <div className="relative">
+                          <FiMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="number"
+                            step="any"
+                            value={longitude}
+                            onChange={(e) => setLongitude(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="e.g. 72.8777"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -297,54 +428,24 @@ const VendorSignUp = () => {
                         </motion.div>
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {step === 3 && (
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-gray-700 font-medium">GST Number (Optional)</label>
-                      <div className="relative">
-                        <FiFileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={gstNumber}
-                          onChange={(e) => setGstNumber(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                          placeholder="22AAAAA0000A1Z5"
-                        />
+                    {selfDelivery && (
+                      <div className="space-y-1">
+                        <label className="text-gray-700 font-medium">Delivery Radius (km)</label>
+                        <div className="relative">
+                          <FiTruck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="number"
+                            value={deliveryRadius}
+                            onChange={(e) => setDeliveryRadius(parseInt(e.target.value))}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Delivery radius in kilometers"
+                            min="1"
+                            max="20"
+                          />
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-gray-700 font-medium">FSSAI License Number</label>
-                      <div className="relative">
-                        <FiFileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={fssaiNumber}
-                          onChange={(e) => setFssaiNumber(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                          placeholder="11223344556677"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-gray-700 font-medium">Business License Number</label>
-                      <div className="relative">
-                        <FiFileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={businessLicense}
-                          onChange={(e) => setBusinessLicense(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                          placeholder="BL-12345678"
-                          required
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -370,6 +471,16 @@ const VendorSignUp = () => {
                 {step < 3 ? (
                   <>
                     {step === 1 && (
+                      <>
+                      <motion.button
+                      type="button"
+                      onClick={() => navigate("/onwersignup")}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-5 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    >
+                       Registered as Onwer
+                    </motion.button>
                       <motion.button
                         type="button"
                         onClick={() => navigate("/login")}
@@ -379,6 +490,7 @@ const VendorSignUp = () => {
                       >
                         Already Registered? Login
                       </motion.button>
+                      </>
                     )}
                     
                     <motion.button

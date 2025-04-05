@@ -5,8 +5,8 @@ const AutoIncrement = require("mongoose-sequence")(mongoose);
 const RetailerSchema = new mongoose.Schema(
   {
     retailerId: {
-      type: Number,
-      unique: true,
+      type: mongoose.Schema.Types.ObjectId,
+      alias:"_id"
     },
     name: {
       type: String,
@@ -332,11 +332,8 @@ RetailerSchema.index({
   tags: "text",
 });
 
-// Auto-increment retailerId
-RetailerSchema.plugin(AutoIncrement, {
-  inc_field: "retailerId",
-  start_seq: 1000,
-});
+
+
 
 // Password encryption middleware
 RetailerSchema.pre("save", async function (next) {

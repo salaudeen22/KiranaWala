@@ -24,6 +24,7 @@
     "react-router-dom": "^7.1.5",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.1",
+    "sweetalert2": "^11.17.2",
     "ui": "github:shadcn/ui"
   },
   "devDependencies": {

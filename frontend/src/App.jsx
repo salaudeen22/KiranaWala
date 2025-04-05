@@ -7,12 +7,14 @@ import Sales from "./screen/Sales";
 import Login from "./screen/auth/Login";
 import SignUp from "./screen/auth/SignUp";
 import UserManagement from "./screen/UserManagement";
+import OwnerSignUp from "./screen/auth/OwnerSignUp";
 
 const App = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/onwersignup" element={<OwnerSignUp />} />
       <Route path="/signup" element={<SignUp />} />
       
       <Route path="/home" element={<HomeScreen />}>

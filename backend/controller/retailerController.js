@@ -1,9 +1,11 @@
-const retailerService = require('../service/retailerService');
-const employeeService=require("../service/employeeService");
-const Retailer=require("../model/vendorSchema");
-const Broadcast=require("../model/BroadcastSchema");
-const Delivery=require("../model/Delivery");
-const asyncHandler=require("express-async-handler");
+const retailerService = require("../service/retailerService");
+const employeeService = require("../service/employeeService");
+const Retailer = require("../model/vendorSchema");
+const Broadcast = require("../model/BroadcastSchema");
+const Delivery = require("../model/Delivery");
+const bcrypt = require("bcrypt");
+const asyncHandler = require("express-async-handler");
+const { createSendToken } = require("../utils/auth");
 
 // Create a new retailer
 exports.createRetailer = async (req, res) => {
@@ -11,13 +13,40 @@ exports.createRetailer = async (req, res) => {
     const retailer = await retailerService.createRetailer(req.body);
     res.status(201).json({
       success: true,
-      data: retailer
+      data: retailer,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
+  }
+};
+exports.login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1) Check if email and password exist
+    if (!email || !password) {
+      return next(new AppError('Please provide email and password', 400));
+    }
+
+    // 2) Check if retailer exists and password is correct
+    const retailer = await Retailer.findOne({ 'contact.email': email }).select('+password');
+
+    if (!retailer || !(await retailer.correctPassword(password, retailer.password))) {
+      return next(new AppError('Incorrect email or password', 401));
+    }
+
+    // 3) Check if account is active
+    if (!retailer.isActive) {
+      return next(new AppError('Your account has been deactivated', 403));
+    }
+
+    // 4) If everything ok, send token to client
+    createSendToken(retailer, 200, res);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -27,12 +56,12 @@ exports.getAllRetailers = async (req, res) => {
     const retailers = await retailerService.getAllRetailers();
     res.status(200).json({
       success: true,
-      data: retailers
+      data: retailers,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -44,17 +73,17 @@ exports.getRetailer = async (req, res) => {
     if (!retailer) {
       return res.status(404).json({
         success: false,
-        message: 'Retailer not found'
+        message: "Retailer not found",
       });
     }
     res.status(200).json({
       success: true,
-      data: retailer
+      data: retailer,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -69,17 +98,17 @@ exports.updateRetailer = async (req, res) => {
     if (!retailer) {
       return res.status(404).json({
         success: false,
-        message: 'Retailer not found'
+        message: "Retailer not found",
       });
     }
     res.status(200).json({
       success: true,
-      data: retailer
+      data: retailer,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -90,12 +119,12 @@ exports.deleteRetailer = async (req, res) => {
     await retailerService.deleteRetailer(req.params.id);
     res.status(204).json({
       success: true,
-      data: null
+      data: null,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -103,7 +132,6 @@ exports.deleteRetailer = async (req, res) => {
 // retailerController.js
 exports.createEmployeeForRetailer = async (req, res) => {
   try {
-   
     const employeeData = req.body;
     // console.log("Controller"+employeeData);
 
@@ -112,25 +140,26 @@ exports.createEmployeeForRetailer = async (req, res) => {
 
     const employee = await employeeService.createEmployee(employeeData);
     // console.log("employye"+employee);
-    
+
     res.status(201).json({
       success: true,
-      data: employee
+      data: employee,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
 
 exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
   // 1. Get retailer's service area pincodes
-  const retailer = await Retailer.findById(req.user.retailerId)
-    .select('serviceAreas.pincode');
-    
-  const pincodes = retailer.serviceAreas.map(area => area.pincode);
+  const retailer = await Retailer.findById(req.user.retailerId).select(
+    "serviceAreas.pincode"
+  );
+
+  const pincodes = retailer.serviceAreas.map((area) => area.pincode);
 
   // 2. Find broadcasts in service area
   const broadcasts = await Broadcast.find({
@@ -140,16 +169,16 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
       $nearSphere: {
         $geometry: {
           type: "Point",
-          coordinates: retailer.location.coordinates
+          coordinates: retailer.location.coordinates,
         },
-        $maxDistance: 5000 // 5km
-      }
-    }
-  }).sort('-createdAt');
+        $maxDistance: 5000, // 5km
+      },
+    },
+  }).sort("-createdAt");
 
   res.status(200).json({
     success: true,
-    data: broadcasts
+    data: broadcasts,
   });
 });
 
@@ -159,12 +188,12 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
     {
       _id: req.params.id,
       status: "pending",
-      expiryTime: { $gt: new Date() }
+      expiryTime: { $gt: new Date() },
     },
     {
       status: "accepted",
       retailerId: req.user.retailerId,
-      acceptedAt: new Date()
+      acceptedAt: new Date(),
     },
     { new: true }
   );
@@ -177,7 +206,7 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
   const deliveryPerson = await Delivery.findOneAndUpdate(
     {
       retailerId: req.user.retailerId,
-      isAvailable: true
+      isAvailable: true,
     },
     { isAvailable: false },
     { sort: { rating: -1 }, new: true }
@@ -190,11 +219,14 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
 
   // 3. Notify customer
   if (io) {
-    io.to(`customer_${broadcast.customerId}`).emit('broadcast_accepted', broadcast);
+    io.to(`customer_${broadcast.customerId}`).emit(
+      "broadcast_accepted",
+      broadcast
+    );
   }
 
   res.status(200).json({
     success: true,
-    data: broadcast
+    data: broadcast,
   });
 });

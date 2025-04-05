@@ -7,6 +7,8 @@ exports.createRetailer = async (retailerData) => {
   return retailer;
 };
 
+
+
 exports.getAllRetailers = async () => {
   return await Retailer.find().select('-password');
 };

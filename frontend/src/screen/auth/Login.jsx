@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
-import { FaStore } from "react-icons/fa";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUser } from "react-icons/fi";
+import { FaStore, FaUserTie, FaUserCog } from "react-icons/fa";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +10,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userType, setUserType] = useState("vendor"); // 'vendor', 'employee', or 'admin'
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -18,26 +19,70 @@ const Login = () => {
     setError("");
     
     try {
-      const response = await fetch(
-        "http://localhost:6565/api/vendor/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      // Determine the appropriate API endpoint based on user type
+      let endpoint = "";
+      switch(userType) {
+        case "vendor":
+          endpoint = "http://localhost:6565/api/owners/login";
+          break;
+        case "employee":
+          endpoint = "http://localhost:6565/api/employees/login";
+          break;
+        case "admin":
+          endpoint = "http://localhost:6565/api/retailers/login";
+          break;
+        default:
+          endpoint = "http://localhost:6565/api/vendor/auth/login";
+      }
+      
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+     
       
       const json = await response.json();
+      console.log(json);
       
       if (response.status === 200) {
         localStorage.setItem("token", json.token);
-        localStorage.setItem("retailId", json.vendor._id);
+        
+        // Store different IDs based on user type
+        if (userType === "vendor") {
+          localStorage.setItem("Id", json.data.user._id);
+          localStorage.setItem("email", json.data.user.email);
+          localStorage.setItem("role", json.data.user.role);
+        } else if (userType === "employee") {
+          localStorage.setItem("employeeId", json.employee._id);
+          localStorage.setItem("Id", json.employee.vendorId);
+          localStorage.setItem("email", json.data.user.email);
+          localStorage.setItem("role", json.data.user.role); 
+        } else if (userType === "admin") {
+          localStorage.setItem("Id", json.data.user._id);
+          localStorage.setItem("email", json.data.user.email);
+          localStorage.setItem("role", json.data.user.role);
+        }
         
         // Success animation before navigation
         await new Promise(resolve => setTimeout(resolve, 500));
-        navigate("/home/dashboard");
+        
+        // Redirect to appropriate dashboard based on user type
+        switch(userType) {
+          case "vendor":
+            navigate("/home/dashboard");
+            break;
+          case "employee":
+            navigate("/employee/dashboard");
+            break;
+          case "admin":
+            navigate("/home/dashboard");
+            break;
+          default:
+            navigate("/");
+        }
       } else {
         setError(json.message || "Invalid credentials");
       }
@@ -65,17 +110,74 @@ const Login = () => {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="text-center"
           >
-            <FaStore className="text-white text-6xl mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-white mb-2">KiranaWalla</h1>
-            <p className="text-blue-100 text-lg">Your neighborhood store management</p>
+            {userType === "vendor" ? (
+              <FaStore className="text-white text-6xl mx-auto mb-4" />
+            ) : userType === "employee" ? (
+              <FaUserTie className="text-white text-6xl mx-auto mb-4" />
+            ) : (
+              <FaUserCog className="text-white text-6xl mx-auto mb-4" />
+            )}
+            <h1 className="text-4xl font-bold text-white mb-2">
+              {userType === "vendor" ? "KiranaWalla" : 
+               userType === "employee" ? "Employee Portal" : "Admin Portal"}
+            </h1>
+            <p className="text-blue-100 text-lg">
+              {userType === "vendor" ? "Your neighborhood store management" :
+               userType === "employee" ? "Access your work dashboard" : "System administration"}
+            </p>
           </motion.div>
         </div>
 
         {/* Right Side - Login Form */}
         <div className="w-full md:w-1/2 p-8 md:p-10">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to manage your store</p>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">
+              {userType === "vendor" ? "Vendor Login" : 
+               userType === "employee" ? "Employee Login" : "Admin Login"}
+            </h2>
+            <p className="text-gray-600">
+              {userType === "vendor" ? "Sign in to manage your store" :
+               userType === "employee" ? "Sign in to access your tasks" : "Sign in to administer the system"}
+            </p>
+          </div>
+
+          {/* User Type Selector */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex rounded-md shadow-sm" role="group">
+              <button
+                type="button"
+                onClick={() => setUserType("vendor")}
+                className={`px-4 py-2 text-sm font-medium rounded-l-lg border ${
+                  userType === "vendor"
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Vendor
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType("employee")}
+                className={`px-4 py-2 text-sm font-medium border-t border-b ${
+                  userType === "employee"
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Employee
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType("admin")}
+                className={`px-4 py-2 text-sm font-medium rounded-r-lg border ${
+                  userType === "admin"
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Admin
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -158,19 +260,21 @@ const Login = () => {
                   Signing in...
                 </span>
               ) : (
-                "Sign In"
+                `Sign In as ${userType.charAt(0).toUpperCase() + userType.slice(1)}`
               )}
             </motion.button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Don't have an account?{' '}
-              <a href="/signup" className="text-blue-600 font-medium hover:underline">
-                Sign up
-              </a>
-            </p>
-          </div>
+          {userType === "vendor" && (
+            <div className="mt-6 text-center">
+              <p className="text-gray-600">
+                Don't have an account?{' '}
+                <a href="/signup" className="text-blue-600 font-medium hover:underline">
+                  Sign up
+                </a>
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

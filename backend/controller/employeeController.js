@@ -4,6 +4,7 @@ const mongoose=require('mongoose');
 const jwt = require("jsonwebtoken");
 const Employee=require("../model/EmployeeSchema");
 const bcrypt=require("bcrypt");
+const vendorSchema = require("../model/vendorSchema");
 
 module.exports = {
   // Create employee
@@ -127,69 +128,119 @@ module.exports = {
 
   async loginEmployee(req, res, next) {
     try {
-        const { email, password } = req.body;
+        const { email, password, userType } = req.body;
         
         // 1. Check if email and password exist
-        if (!email || !password) {
+        if (!email || !password || !userType) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email and password'
+                message: 'Please provide email, password and user type'
             });
         }
 
-        // 2. Find employee with password field
-        const employee = await Employee.findOne({ email })
-            .select('+password +employmentDetails.isActive');
+        if (userType === 'employee') {
+            // Employee login logic
+            const employee = await Employee.findOne({ email })
+                .select('+password +employmentDetails.isActive');
 
-        if (!employee) {
-            return res.status(401).json({
+            if (!employee) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Incorrect email or password'
+                });
+            }
+
+            // Check if password is correct
+            const isMatch = await bcrypt.compare(password, employee.password);
+            
+            if (!isMatch) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Incorrect email or password'
+                });
+            }
+
+            // Check if account is active
+            if (!employee.employmentDetails.isActive) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Account deactivated. Please contact admin.'
+                });
+            }
+
+            // Update last login
+            employee.lastLogin = Date.now();
+            await employee.save();
+
+            // Generate token
+            const token = jwt.sign(
+                { id: employee._id, role: 'employee' },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN }
+            );
+            
+            // Remove password from output
+            employee.password = undefined;
+
+            return res.status(200).json({
+                success: true,
+                token,
+                data: employee.formattedDetails
+            });
+
+        } else if (userType === 'admin') {
+            // Admin login logic
+
+       
+            const admin = await vendorSchema.findOne({ email })
+                .select('+password');
+
+            console.log("trigger",email);
+
+            if (!admin) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Incorrect email or password'
+                });
+            }
+
+            // Check if password is correct
+            const isMatch = await bcrypt.compare(password, admin.password);
+            
+            if (!isMatch) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Incorrect email or password'
+                });
+            }
+
+            // Generate token
+            const token = jwt.sign(
+                { id: admin._id, role: 'admin' },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN }
+            );
+            
+            // Remove password from output
+            admin.password = undefined;
+
+            return res.status(200).json({
+                success: true,
+                token,
+                data: admin
+            });
+
+        } else {
+            return res.status(400).json({
                 success: false,
-                message: 'Incorrect email or password'
+                message: 'Invalid user type'
             });
         }
 
-        // 3. Check if password is correct
-        const isMatch = await bcrypt.compare(password, employee.password);
-        
-        if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Incorrect email or password'
-            });
-        }
-
-        // 4. Check if account is active
-        if (!employee.employmentDetails.isActive) {
-            return res.status(401).json({
-                success: false,
-                message: 'Account deactivated. Please contact admin.'
-            });
-        }
-
-        // 5. Update last login
-        employee.lastLogin = Date.now();
-        await employee.save();
-
-        // 6. Generate token
-        const token = jwt.sign(
-            { id: employee._id },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-
-        // 7. Remove password from output
-        employee.password = undefined;
-
-        res.status(200).json({
-            success: true,
-            token,
-            data: employee.formattedDetails // Use formattedDetails to avoid sending sensitive data
-        });
     } catch (err) {
         next(err);
     }
 },
-
   // Reset password
   async resetPassword(req, res) {
     try {

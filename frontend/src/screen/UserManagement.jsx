@@ -17,7 +17,8 @@ const UserManagement = () => {
     name: "",
     email: "",
     phone: "",
-    role: "employee",
+    password: "defaultPassword123", // Default password
+    role: "cashier",
     retailerId: "",
     panCard: "",
     aadhaarCard: "",
@@ -25,25 +26,43 @@ const UserManagement = () => {
   });
 
   useEffect(() => {
-    const storedRetailerId = localStorage.getItem("retailId") || "";
-    setRetailerId(storedRetailerId);
-    setNewEmployee(prev => ({ ...prev, retailerId: storedRetailerId }));
-    fetchEmployeeData();
+    const storedRetailerId = localStorage.getItem("retailId");
+    const token = localStorage.getItem("token");
+    console.log(token);
+    
+    if (!token) {
+      alert("Authentication required. Please login again.");
+      // You might want to redirect to login here
+      return;
+    }
+
+    if (storedRetailerId) {
+      setRetailerId(storedRetailerId);
+      setNewEmployee(prev => ({ ...prev, retailerId: storedRetailerId }));
+      fetchEmployeeData(token, storedRetailerId);
+    }
   }, []);
 
-  const fetchEmployeeData = async () => {
+  const fetchEmployeeData = async (token, retailerId) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:6565/api/employees/", {
+      const response = await fetch(`http://localhost:6565/api/employees?retailerId=${retailerId}`, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setEmployeeData(data);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch employees");
       }
+      
+      const data = await response.json();
+      setEmployeeData(data);
     } catch (error) {
       console.error("Error fetching employee data:", error);
+      alert(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -56,10 +75,14 @@ const UserManagement = () => {
     setIsLoading(true);
     const formData = new FormData();
     formData.append("image", file);
+    const token = localStorage.getItem("token");
   
     try {
       const response = await fetch("http://localhost:6565/api/upload", {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: formData,
       });
   
@@ -84,11 +107,12 @@ const UserManagement = () => {
       name: employee.name,
       email: employee.email,
       phone: employee.phone,
+      password: "", // Don't pre-fill password for security
       role: employee.role,
       retailerId: employee.retailerId,
-      panCard: employee.panCard,
-      aadhaarCard: employee.aadhaarCard,
-      profileImage: employee.profileImage
+      panCard: employee.documents?.panCard || "",
+      aadhaarCard: employee.documents?.aadhaarCard || "",
+      profileImage: employee.profileImage || ""
     });
   };
 
@@ -101,6 +125,7 @@ const UserManagement = () => {
     }
   
     setIsLoading(true);
+    const token = localStorage.getItem("token");
     
     try {
       const url = currentEmployee 
@@ -113,10 +138,13 @@ const UserManagement = () => {
         name: newEmployee.name,
         email: newEmployee.email,
         phone: newEmployee.phone,
+        password: newEmployee.password,
         role: newEmployee.role,
         retailerId: newEmployee.retailerId,
-        panCard: newEmployee.panCard,
-        aadhaarCard: newEmployee.aadhaarCard,
+        documents: {
+          panCard: newEmployee.panCard,
+          aadhaarCard: newEmployee.aadhaarCard
+        },
         userImage: newEmployee.profileImage
       };
   
@@ -124,7 +152,7 @@ const UserManagement = () => {
         method,
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(requestBody),
       });
@@ -135,20 +163,10 @@ const UserManagement = () => {
         throw new Error(responseData.message || "Failed to save employee");
       }
   
-      await fetchEmployeeData();
+      await fetchEmployeeData(token, retailerId);
       setIsOpen(false);
       setIsEditOpen(false);
-      setNewEmployee({ 
-        name: "", 
-        email: "", 
-        phone: "", 
-        role: "employee", 
-        retailerId, 
-        panCard: "", 
-        aadhaarCard: "", 
-        profileImage: "" 
-      });
-      setCurrentEmployee(null);
+      resetForm();
       
     } catch (error) {
       console.error("Error:", error);
@@ -161,16 +179,21 @@ const UserManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this employee?")) return;
     
+    const token = localStorage.getItem("token");
+    
     try {
       const response = await fetch(`http://localhost:6565/api/employees/${id}`, {
         method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
       });
 
       if (!response.ok) {
         throw new Error("Failed to delete employee");
       }
 
-      await fetchEmployeeData();
+      await fetchEmployeeData(token, retailerId);
     } catch (error) {
       console.error("Error deleting employee:", error);
       alert(error.message);
@@ -189,7 +212,8 @@ const UserManagement = () => {
       name: "", 
       email: "", 
       phone: "", 
-      role: "employee", 
+      password: "defaultPassword123",
+      role: "cashier", 
       retailerId, 
       panCard: "", 
       aadhaarCard: "", 

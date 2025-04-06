@@ -1,12 +1,9 @@
 import { FiX, FiUpload, FiDollarSign, FiTag, FiPackage, FiCalendar, FiPercent } from "react-icons/fi";
 import { useState } from "react";
 
-const AddProductModel = ({
-  setIsModalOpen,
-
-}) => {
+const AddProductModel = ({ setIsModalOpen }) => {
   const [newProduct, setNewProduct] = useState({
-    productId: "",
+
     name: "",
     description: "",
     category: "Grocery",
@@ -15,10 +12,10 @@ const AddProductModel = ({
     stock: "",
     expiryDate: "",
     images: [],
-    retailerId: Number(localStorage.getItem("retailId")) || 0
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,13 +37,15 @@ const AddProductModel = ({
           totalReviews: 0
         }
       };
-
+      const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:6565/api/vendor/products/add-product",
+        "http://localhost:6565/api/products",
         {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+
           },
           body: JSON.stringify(finalProduct),
         }
@@ -73,7 +72,7 @@ const AddProductModel = ({
     e.preventDefault();
     
     // Validate required fields
-    if (!newProduct.productId || !newProduct.name || !newProduct.price || !newProduct.stock) {
+    if (!newProduct.name || !newProduct.price || !newProduct.stock) {
       alert("Please fill all required fields");
       return;
     }
@@ -90,6 +89,7 @@ const AddProductModel = ({
     const file = e.target.files[0];
     if (!file) return;
 
+    setUploadStatus("uploading");
     const formData = new FormData();
     formData.append("image", file);
 
@@ -110,9 +110,11 @@ const AddProductModel = ({
             altText: `Image of ${newProduct.name || 'product'}`
           }] 
         }));
+        setUploadStatus("success");
       }
     } catch (error) {
       console.error("Upload error:", error);
+      setUploadStatus("error");
       alert("Image upload failed. Please try again.");
     }
   };
@@ -136,26 +138,6 @@ const AddProductModel = ({
         {/* Scrollable Content */}
         <div className="overflow-y-auto flex-1 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Product ID */}
-            <div className="relative">
-              <label htmlFor="productId" className="block text-sm font-medium text-gray-700 mb-1">
-                Product ID <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="productId"
-                  name="productId"
-                  value={newProduct.productId}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                  disabled={isSubmitting}
-                />
-                <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              </div>
-            </div>
-
             {/* Product Name */}
             <div className="relative">
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -209,6 +191,7 @@ const AddProductModel = ({
                 <option value="Dairy">Dairy</option>
                 <option value="Snacks">Snacks</option>
                 <option value="Personal Care">Personal Care</option>
+                <option value="Household">Household</option>
               </select>
             </div>
 
@@ -309,23 +292,34 @@ const AddProductModel = ({
               <div className="flex items-center justify-center w-full">
                 <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">
-                      {newProduct.images?.length ? 'Image uploaded' : 'Click to upload'}
-                    </p>
+                    {newProduct.images?.length > 0 ? (
+                      <div className="text-center">
+                        <p className="text-sm text-green-600 font-medium">Image uploaded successfully!</p>
+                        <p className="text-xs text-gray-500 mt-1 truncate max-w-xs">
+                          {newProduct.images[0].url.split('/').pop()}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500">
+                          {uploadStatus === "uploading" ? "Uploading..." : "Click to upload"}
+                        </p>
+                        {uploadStatus === "error" && (
+                          <p className="text-xs text-red-500 mt-1">Upload failed. Try again.</p>
+                        )}
+                      </>
+                    )}
                   </div>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || uploadStatus === "uploading"}
                   />
                 </label>
               </div>
-              {newProduct.images?.length > 0 && (
-                <div className="mt-2 text-xs text-green-600">Image uploaded successfully!</div>
-              )}
             </div>
           </form>
         </div>

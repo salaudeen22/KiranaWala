@@ -14,6 +14,9 @@ const productRoute = require("./router/retailerRoute/productRoutes");
 const customerRoute = require("./router/retailerRoute/customerRoutes");
 
 const deliveryRoute = require("./router/retailerRoute/deliveryRoutes");
+const uploadRoute = require("./middleware/upload");
+
+
 
 // Database connection
 connectdb();
@@ -33,6 +36,8 @@ app.use("/api/products", productRoute);
 app.use("/api/customers", customerRoute);
 app.use("/api/broadcasts", broadcastRoute);
 app.use("/api/delivery", deliveryRoute);
+
+app.use("/api", uploadRoute);
 
 // Health check
 app.get("/", (req, res) => {

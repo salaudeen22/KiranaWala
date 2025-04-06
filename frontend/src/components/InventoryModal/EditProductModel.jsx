@@ -1,6 +1,9 @@
 import React, { useState } from "react";
-import { FiX, FiEdit2, FiTrash2, FiImage, FiTag, FiDollarSign, FiPercent, FiPackage, FiAlignLeft } from "react-icons/fi";
-import { FiUpload } from "react-icons/fi";
+import { 
+  FiX, FiEdit2, FiTrash2, FiImage, 
+  FiTag, FiDollarSign, FiPercent, 
+  FiPackage, FiAlignLeft, FiUpload 
+} from "react-icons/fi";
 
 const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) => {
   const [updatedProduct, setUpdatedProduct] = useState({ 
@@ -8,6 +11,7 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
     images: product.images || [{ url: "" }] // Ensure images array exists
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,6 +22,7 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
     const file = e.target.files[0];
     if (!file) return;
 
+    setIsSubmitting(true);
     const formData = new FormData();
     formData.append("image", file);
 
@@ -38,12 +43,16 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
       }
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert("Image upload failed. Please try again.");
+      setError("Image upload failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const updateProduct = async () => {
     setIsSubmitting(true);
+    setError(null);
+    
     try {
       // Prepare final product data
       const productToUpdate = {
@@ -55,11 +64,12 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
       };
 
       const response = await fetch(
-        `http://localhost:6565/api/vendor/products/update-product/${updatedProduct._id}`,
+        `http://localhost:6565/api/products/${updatedProduct._id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
           },
           body: JSON.stringify(productToUpdate),
         }
@@ -71,12 +81,12 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
         throw new Error(data.message || "Error updating product");
       }
 
-      alert(data.message || "Product updated successfully!");
+      alert("Product updated successfully!");
       handleUpdateProduct();
       setIsEditModalOpen(false);
     } catch (error) {
       console.error("Error:", error);
-      alert(error.message || "Error while updating product");
+      setError(error.message || "Error while updating product");
     } finally {
       setIsSubmitting(false);
     }
@@ -85,12 +95,18 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     
+    setIsSubmitting(true);
+    setError(null);
+    
     try {
       const response = await fetch(
-        `http://localhost:6565/api/vendor/products/${product.productId}`,
+        `http://localhost:6565/api/products/${updatedProduct._id}`,
         {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
         }
       );
 
@@ -100,17 +116,31 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
         throw new Error(data.message || "Error deleting product");
       }
 
-      alert(data.message || "Product deleted successfully");
+      alert("Product deleted successfully");
       handleUpdateProduct();
       setIsEditModalOpen(false);
     } catch (error) {
       console.error("Error:", error);
-      alert(error.message || "Error while deleting product");
+      setError(error.message || "Error while deleting product");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!updatedProduct.name || !updatedProduct.price || !updatedProduct.stock) {
+      setError("Please fill all required fields");
+      return;
+    }
+
+    if (updatedProduct.discount > 100) {
+      setError("Discount cannot be greater than 100%");
+      return;
+    }
+
     updateProduct();
   };
 
@@ -124,7 +154,7 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
             <h2 className="text-2xl font-bold text-gray-800">Edit Product</h2>
           </div>
           <button
-            onClick={() => setIsEditModalOpen(false)}
+            onClick={() => !isSubmitting && setIsEditModalOpen(false)}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -134,6 +164,12 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
 
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="p-6">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-4">
             {/* Product Name */}
             <div className="relative">
@@ -315,7 +351,7 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
           <div className="pt-4 flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => setIsEditModalOpen(false)}
+              onClick={() => !isSubmitting && setIsEditModalOpen(false)}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               disabled={isSubmitting}
             >

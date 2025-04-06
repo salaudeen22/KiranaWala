@@ -4,10 +4,7 @@ const AutoIncrement = require("mongoose-sequence")(mongoose);
 
 const RetailerSchema = new mongoose.Schema(
   {
-    retailerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      alias:"_id"
-    },
+    
     name: {
       type: String,
       required: true,
@@ -364,10 +361,7 @@ RetailerSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   return false;
 };
 
-// Virtual for formatted retailer ID
-RetailerSchema.virtual("formattedRetailerId").get(function () {
-  return `RET-${this.retailerId.toString().padStart(5, "0")}`;
-});
+
 RetailerSchema.index({ "location.coordinates": "2dsphere" });
 
 module.exports = mongoose.model("Retailer", RetailerSchema);

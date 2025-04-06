@@ -129,6 +129,7 @@ const protect = async (req, res, next) => {
       // Check admin
       if (decoded.role === 'admin') {
         const admin = await vendorSchema.findById(decoded.id).select('-password');
+        console.log(admin);
         if (!admin) {
           return res.status(401).json({ 
             success: false, 

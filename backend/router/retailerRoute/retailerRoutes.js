@@ -8,12 +8,12 @@ router.post("/login",retailerController.login);
 router.use(authMiddleware.protect);
 // Basic CRUD routes
 
-router.get('/', retailerController.getAllRetailers);
-router.get('/:id', retailerController.getRetailer);
-router.patch('/:id', retailerController.updateRetailer);
-router.delete('/:id', retailerController.deleteRetailer);
+router.get('/getAll', retailerController.getAllRetailers);
+router.get('/', retailerController.getRetailer);
+router.patch('/', retailerController.updateRetailer);
+router.delete('/', retailerController.deleteRetailer);
 
 // Employee management
-router.post('/:retailerId/employees', retailerController.createEmployeeForRetailer);
+router.post('/employees', retailerController.createEmployeeForRetailer);
 
 module.exports = router;

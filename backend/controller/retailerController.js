@@ -69,7 +69,7 @@ exports.getAllRetailers = async (req, res) => {
 // Get single retailer
 exports.getRetailer = async (req, res) => {
   try {
-    const retailer = await retailerService.getRetailerById(req.params.id);
+    const retailer = await retailerService.getRetailerById(req.user.id);
     if (!retailer) {
       return res.status(404).json({
         success: false,
@@ -92,7 +92,7 @@ exports.getRetailer = async (req, res) => {
 exports.updateRetailer = async (req, res) => {
   try {
     const retailer = await retailerService.updateRetailer(
-      req.params.id,
+      req.user.id,
       req.body
     );
     if (!retailer) {
@@ -116,10 +116,10 @@ exports.updateRetailer = async (req, res) => {
 // Delete retailer
 exports.deleteRetailer = async (req, res) => {
   try {
-    await retailerService.deleteRetailer(req.params.id);
+    await retailerService.deleteRetailer(req.user.id);
     res.status(204).json({
       success: true,
-      data: null,
+      data: "Deleted",
     });
   } catch (error) {
     res.status(500).json({
@@ -133,10 +133,11 @@ exports.deleteRetailer = async (req, res) => {
 exports.createEmployeeForRetailer = async (req, res) => {
   try {
     const employeeData = req.body;
-    // console.log("Controller"+employeeData);
+    const retailerId=req.user.id;
+    console.log("Controller"+employeeData);
 
-    // Set the retailerId from the route parameter
-    // employeeData.retailerId = retailerId;
+ 
+    employeeData.retailerId = retailerId;
 
     const employee = await employeeService.createEmployee(employeeData);
     // console.log("employye"+employee);

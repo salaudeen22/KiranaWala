@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const EmployeeSchema = new mongoose.Schema({
   employeeId: {
@@ -144,7 +145,7 @@ EmployeeSchema.methods.comparePassword = async function(candidatePassword) {
   console.log('Stored hash:', this.password);
   return await bcrypt.compare(candidatePassword, this.password);
 };
-
+EmployeeSchema.plugin(mongoosePaginate);
 // Virtual for formatted employee details
 EmployeeSchema.virtual("formattedDetails").get(function() {
   return {

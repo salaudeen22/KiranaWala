@@ -199,6 +199,7 @@ const authorize = (...roles) => {
     // Owners have full access
     if (req.user?.role === 'owner') return next();
     if (req.user?.role === 'admin') return next();
+    if (req.user?.role === 'manager') return next();
 
     if (!req.user) {
       return res.status(403).json({

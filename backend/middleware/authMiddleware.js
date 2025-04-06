@@ -4,6 +4,7 @@ const Employee = require("../model/EmployeeSchema");
 const Retailer = require("../model/vendorSchema");
 const Owner = require("../model/OnwerSchema");
 const Customer = require("../model/customerSchema");
+const vendorSchema = require("../model/vendorSchema");
 
 const customerProtect = async (req, res, next) => {
   let token;
@@ -54,8 +55,12 @@ const ownerProtect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = verifyToken(token);
-      
+      // console.log(decoded);
+
       req.owner = await Owner.findById(decoded.id).select('-password');
+      // console.log(req.owner);
+    
+
       
       if (!req.owner) {
         return res.status(401).json({ 
@@ -121,6 +126,25 @@ const protect = async (req, res, next) => {
         return next();
       }
 
+      // Check admin
+      if (decoded.role === 'admin') {
+        const admin = await vendorSchema.findById(decoded.id).select('-password');
+        if (!admin) {
+          return res.status(401).json({ 
+            success: false, 
+            message: 'Admin not found' 
+          });
+        }
+        
+        req.user = {
+          id: admin._id,
+          email: admin.email,
+          role: 'admin',
+          retailerId: admin._id
+        };
+        return next();
+      }
+
       // Check employee
       const employee = await Employee.findById(decoded.id).select('-password');
       if (employee) {
@@ -146,7 +170,6 @@ const protect = async (req, res, next) => {
           retailerId: employee.retailerId,
           permissions: employee.permissions
         };
-
         return next();
       }
 
@@ -174,6 +197,7 @@ const authorize = (...roles) => {
   return (req, res, next) => {
     // Owners have full access
     if (req.user?.role === 'owner') return next();
+    if (req.user?.role === 'admin') return next();
 
     if (!req.user) {
       return res.status(403).json({

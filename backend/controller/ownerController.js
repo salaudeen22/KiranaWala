@@ -4,7 +4,10 @@ const { signToken, createSendToken } = require('../utils/auth');
 exports.register = async (req, res) => {
   try {
     const owner = await Owner.create(req.body);
-    createSendToken(owner, 201, res);
+    res.status(201).json({
+      success: true,
+      data:owner
+    });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -56,7 +59,8 @@ exports.login = async (req, res) => {
 
 exports.getOwner = async (req, res) => {
   try {
-    const owner = await Owner.findById(req.params.id);
+    // console.log("Inside Controllers",req.owner);
+    const owner = await Owner.findById(req.owner.id);
     if (!owner) {
       return res.status(404).json({
         success: false,
@@ -77,7 +81,7 @@ exports.getOwner = async (req, res) => {
 
 exports.updateOwner = async (req, res) => {
   try {
-    const owner = await Owner.findByIdAndUpdate(req.params.id, req.body, {
+    const owner = await Owner.findByIdAndUpdate(req.owner.id, req.body, {
       new: true,
       runValidators: true
     });
@@ -123,7 +127,7 @@ exports.deleteOwner = async (req, res) => {
 exports.addStoreToOwner = async (req, res) => {
   try {
     const owner = await Owner.findByIdAndUpdate(
-      req.params.id,
+      req.owner.id,
       { $addToSet: { storesOwned: req.body.retailerId } },
       { new: true }
     ).populate('storesOwned');

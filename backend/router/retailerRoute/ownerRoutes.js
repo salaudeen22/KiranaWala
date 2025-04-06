@@ -8,10 +8,10 @@ router.post('/register', ownerController.register);
 router.post('/login', ownerController.login);
 
 // Protected routes
-router.get('/:id', ownerProtect, ownerController.getOwner);
-router.put('/:id', ownerProtect, ownerController.updateOwner);
+router.get('/', ownerProtect, ownerController.getOwner);
+router.put('/', ownerProtect, ownerController.updateOwner);
 router.delete('/:id', ownerProtect, ownerAuthorize('admin'), ownerController.deleteOwner);
 
-router.patch('/:id/add-store', ownerProtect, ownerController.addStoreToOwner);
+router.patch('/add-store', ownerProtect, ownerController.addStoreToOwner);
 
 module.exports = router;

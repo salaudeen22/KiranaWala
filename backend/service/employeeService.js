@@ -13,6 +13,7 @@ class EmployeeService {
   // EmployeeService.js
   async createEmployee(employeeData) {
     const session = await mongoose.startSession();
+    console.log("empliyeedata"+employeeData.retailerId);
     session.startTransaction();
     // console.log("employye1");
     // console.log(employeeData);
@@ -27,6 +28,8 @@ class EmployeeService {
       const employee = new Employee(employeeData);
       console.log(employee);
       await employee.save({ session });
+
+      console.log("retailerDate"+retailer);
 
       // 3. Add to retailer's employees array
       retailer.employees.push(employee._id);

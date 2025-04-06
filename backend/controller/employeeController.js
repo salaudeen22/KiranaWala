@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const Employee=require("../model/EmployeeSchema");
 const bcrypt=require("bcrypt");
 const vendorSchema = require("../model/vendorSchema");
+const { createSendToken } = require("../utils/auth");
 
 module.exports = {
   // Create employee
@@ -128,17 +129,17 @@ module.exports = {
 
   async loginEmployee(req, res, next) {
     try {
-        const { email, password, userType } = req.body;
+        const { email, password} = req.body;
         
         // 1. Check if email and password exist
-        if (!email || !password || !userType) {
+        if (!email || !password ) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email, password and user type'
+                message: 'Please provide email, password '
             });
         }
 
-        if (userType === 'employee') {
+       
             // Employee login logic
             const employee = await Employee.findOne({ email })
                 .select('+password +employmentDetails.isActive');
@@ -146,7 +147,7 @@ module.exports = {
             if (!employee) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Incorrect email or password'
+                    message: 'Employee not found'
                 });
             }
 
@@ -172,70 +173,11 @@ module.exports = {
             employee.lastLogin = Date.now();
             await employee.save();
 
-            // Generate token
-            const token = jwt.sign(
-                { id: employee._id, role: 'employee' },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN }
-            );
-            
-            // Remove password from output
             employee.password = undefined;
-
-            return res.status(200).json({
-                success: true,
-                token,
-                data: employee.formattedDetails
-            });
-
-        } else if (userType === 'admin') {
-            // Admin login logic
-
-       
-            const admin = await vendorSchema.findOne({ email })
-                .select('+password');
-
-            console.log("trigger",email);
-
-            if (!admin) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Incorrect email or password'
-                });
-            }
-
-            // Check if password is correct
-            const isMatch = await bcrypt.compare(password, admin.password);
+            return await createSendToken(employee, 200, res);
             
-            if (!isMatch) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Incorrect email or password'
-                });
-            }
 
-            // Generate token
-            const token = jwt.sign(
-                { id: admin._id, role: 'admin' },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN }
-            );
-            
-            // Remove password from output
-            admin.password = undefined;
-
-            return res.status(200).json({
-                success: true,
-                token,
-                data: admin
-            });
-
-        } else {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid user type'
-            });
-        }
+        
 
     } catch (err) {
         next(err);

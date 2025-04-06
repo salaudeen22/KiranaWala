@@ -15,10 +15,10 @@ const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id, user.role, user.retailerId);
   if(user.role=="owner")
   {
-    res.status(statusCode).json({
+    return res.status(statusCode).json({ 
       status: 'success',
       token,
-      retailerId: user._id, 
+      retailerId: user._id,
       data: {
         user: {
           _id: user._id,

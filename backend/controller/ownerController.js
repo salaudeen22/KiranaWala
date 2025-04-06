@@ -29,33 +29,35 @@ exports.login = async (req, res) => {
     }
 
     // 2) Check if owner exists and password is correct
-    const owner = await Owner.findOne({email }).select('+password');
+    const owner = await Owner.findOne({ email }).select('+password');
     console.log(owner);
 
-    if (!owner ) {
+    if (!owner) {
       return res.status(401).json({
         success: false,
         message: 'Incorrect email or password'
       });
     }
-    const cmp=(await owner.comparePassword(password));
-    if(!cmp)
-    {
+
+    const cmp = await owner.comparePassword(password);
+    if (!cmp) {
       return res.status(401).json({
         success: false,
         message: 'Incorrect email or password'
       });
     }
+
     // 3) If everything ok, send token
-    createSendToken(owner, 200, res);
-    return;
+     createSendToken(owner, 200, res);
+
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message
     });
   }
 };
+
 
 exports.getOwner = async (req, res) => {
   try {

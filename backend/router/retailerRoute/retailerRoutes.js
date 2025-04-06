@@ -8,6 +8,7 @@ router.post("/login",retailerController.login);
 router.use(authMiddleware.protect);
 // Basic CRUD routes
 
+
 router.get('/getAll', retailerController.getAllRetailers);
 router.get('/', retailerController.getRetailer);
 router.patch('/', retailerController.updateRetailer);

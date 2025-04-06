@@ -70,19 +70,30 @@ const OwnerSignUp = () => {
   
       if (response.status === 201) {
         setSuccess(true);
-  
-        // ✅ SweetAlert Success
         await Swal.fire({
           title: "Registration Successful!",
-          html: `Your <b>Owner ID</b> is: <code>${json.data.user.id}</code><br><br><b>Please save this ID for future use.</b>`,
+          html: `Your <b>Owner ID</b> is: <code>${json.data.id}</code><br><br><b>Please save this ID for future use.</b>`,
           icon: "success",
           confirmButtonText: "Save",
           allowOutsideClick: false,
           allowEscapeKey: false,
         });
-  
         navigate("/signup");
-      } 
+      } else if (response.status === 400) {
+     
+        Swal.fire({
+          icon: "error",
+          title: "Registration Failed",
+          text: json.message || "Email already registered",
+        });
+      } else {
+        
+        Swal.fire({
+          icon: "error",
+          title: "Registration Failed",
+          text: json.message || "Something went wrong. Please try again.",
+        });
+      }
     } catch (error) {
       console.error("Sign Up Error:", error);
       Swal.fire({

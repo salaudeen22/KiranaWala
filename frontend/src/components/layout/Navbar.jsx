@@ -1,19 +1,25 @@
 import { useSidebar } from "../../context/ToggleSideBar";
 import { useUser } from "../../context/userContext";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { FiSearch, FiSettings, FiLogOut } from "react-icons/fi";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RiDashboardLine } from "react-icons/ri";
 import { useNavigate, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 
 const NavBar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
-  const { userData } = useUser();
+  const { userData, loading } = useUser();
   const dropdownRef = useRef(null);
+
+
+
+  console.log("Navbar userData:", userData);
+
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,13 +41,18 @@ const NavBar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  if (!userData || loading) return null; 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
   return (
-    <nav className={`fixed w-full top-0 z-30 transition-all duration-300 ${scrolled ? "bg-amber-500 shadow-lg" : "bg-amber-400 shadow-md"}`}>
+    <nav
+      className={`fixed w-full top-0 z-30 transition-all duration-300 ${
+        scrolled ? "bg-amber-500 shadow-lg" : "bg-amber-400 shadow-md"
+      }`}
+    >
       <div className="max-w-screen-xl flex items-center justify-between mx-auto px-4 py-3">
         {/* Left section - Hamburger and Logo */}
         <div className="flex items-center space-x-4">
@@ -52,7 +63,7 @@ const NavBar = () => {
           >
             <GiHamburgerMenu className="text-white text-xl" />
           </button>
-          
+
           <Link to="/" className="flex items-center space-x-2">
             <span className="self-center text-2xl font-bold text-white">
               Kiranwalla
@@ -81,8 +92,12 @@ const NavBar = () => {
             className="flex items-center space-x-2 focus:outline-none"
           >
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-white">{userData?.name ?? "Guest"}</p>
-              <p className="text-xs text-amber-100">{userData?.email ?? "No email"}</p>
+              <p className="text-sm font-medium text-white">
+                {userData?.name ?? "Guest"}
+              </p>
+              <p className="text-xs text-amber-100">
+                {(userData.contact?.email || userData.email) ?? "No email"}
+              </p>
             </div>
             <div className="relative">
               <img
@@ -110,7 +125,7 @@ const NavBar = () => {
                     {userData?.name ?? "Guest"}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {userData?.email ?? "No email"}
+                    {userData.contact?.email ?? "No email"}
                   </p>
                 </div>
                 <ul className="py-1">

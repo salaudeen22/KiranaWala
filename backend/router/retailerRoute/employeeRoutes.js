@@ -10,6 +10,8 @@ router.post("/reset-password", employeeController.resetPassword);
 // Protected routes
 router.use(protect); // Applies to all routes below
 
+
+router.get("/",employeeController.getProfile);
 // Employee creation (Owner/Admin only)
 router.post("/", 
   authorize("owner", "admin"), 

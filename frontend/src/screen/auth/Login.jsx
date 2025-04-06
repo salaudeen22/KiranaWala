@@ -56,10 +56,12 @@ const Login = () => {
           localStorage.setItem("email", json.data.user.email);
           localStorage.setItem("role", json.data.user.role);
         } else if (userType === "employee") {
-          localStorage.setItem("employeeId", json.employee._id);
-          localStorage.setItem("Id", json.employee.vendorId);
+      
+          localStorage.setItem("Id", json.data.user._id); 
           localStorage.setItem("email", json.data.user.email);
-          localStorage.setItem("role", json.data.user.role); 
+          localStorage.setItem("role", json.data.user.role);
+           
+          
         } else if (userType === "admin") {
           localStorage.setItem("Id", json.data.user._id);
           localStorage.setItem("email", json.data.user.email);
@@ -75,9 +77,11 @@ const Login = () => {
             navigate("/home/dashboard");
             break;
           case "employee":
-            navigate("/employee/dashboard");
+            // navigate("/employee/dashboard");
+            navigate("/home/dashboard");
             break;
           case "admin":
+            // navigate("/home/dashboard");
             navigate("/home/dashboard");
             break;
           default:

@@ -7,6 +7,9 @@ const bcrypt=require("bcrypt");
 const vendorSchema = require("../model/vendorSchema");
 const { createSendToken } = require("../utils/auth");
 
+
+
+
 module.exports = {
   // Create employee
   async addEmployee(req, res) {
@@ -28,6 +31,33 @@ module.exports = {
     }
   },
 
+  async getProfile(req,res)
+  {
+    try {
+      const id=req.user.id;
+      
+      const userData=await Employee.findById(id).select("-password");
+      if(!userData)
+      {
+        res.status(400).json({
+          success: false,
+          message: "No Employee Found"
+        });
+      }
+      return res.status(200).json(
+        {
+          success: true,
+        data:userData,
+        }
+      )
+      
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
   // Get all employees
   async getEmployees(req, res) {
     try {

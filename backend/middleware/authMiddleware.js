@@ -119,17 +119,17 @@ const protect = async (req, res, next) => {
       if (owner) {
         req.user = {
           id: owner._id,
-          email: owner.email,
           role: 'owner',
-          storesOwned: owner.storesOwned // Array of retailer IDs
+          storesOwned: owner.storesOwned 
         };
+        console.log(req.user);
         return next();
       }
 
       // Check admin
       if (decoded.role === 'admin') {
         const admin = await vendorSchema.findById(decoded.id).select('-password');
-        console.log(admin);
+        // console.log(admin);
         if (!admin) {
           return res.status(401).json({ 
             success: false, 
@@ -139,10 +139,10 @@ const protect = async (req, res, next) => {
         
         req.user = {
           id: admin._id,
-          email: admin.email,
           role: 'admin',
           retailerId: admin._id
         };
+        console.log(req.user);
         return next();
       }
 
@@ -163,6 +163,7 @@ const protect = async (req, res, next) => {
             message: 'Associated retailer not found' 
           });
         }
+   
 
         req.user = {
           id: employee._id,
@@ -171,6 +172,7 @@ const protect = async (req, res, next) => {
           retailerId: employee.retailerId,
           permissions: employee.permissions
         };
+        console.log(req.user);
         return next();
       }
 
@@ -192,6 +194,7 @@ const protect = async (req, res, next) => {
     success: false, 
     message: 'Not authorized, no authentication token' 
   });
+  
 };
 
 const authorize = (...roles) => {

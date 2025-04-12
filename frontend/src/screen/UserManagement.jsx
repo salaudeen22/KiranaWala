@@ -17,7 +17,7 @@ const UserManagement = () => {
     name: "",
     email: "",
     phone: "",
-    password: "defaultPassword123", // Default password
+    password: "defaultPassword123", 
     role: "cashier",
     retailerId: "",
     panCard: "",
@@ -43,26 +43,31 @@ const UserManagement = () => {
     }
   }, []);
 
-  const fetchEmployeeData = async (token, retailerId) => {
+  const fetchEmployeeData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:6565/api/employees?retailerId=${retailerId}`, {
-        method: "GET",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:6565/api/employees/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
-      
+  
       if (!response.ok) {
-        throw new Error("Failed to fetch employees");
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch employees');
       }
+  
+      const responseData = await response.json();
+      // Handle both the array response and the object with data property
+      const employees = Array.isArray(responseData) ? responseData : 
+                       (responseData.data ? responseData.data : []);
       
-      const data = await response.json();
-      setEmployeeData(data);
+      setEmployeeData(employees);
     } catch (error) {
-      console.error("Error fetching employee data:", error);
-      alert(error.message);
+      console.error('Error fetching employee data:', error);
+      setEmployeeData([]);  
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +135,7 @@ const UserManagement = () => {
     try {
       const url = currentEmployee 
         ? `http://localhost:6565/api/employees/${currentEmployee._id}`
-        : "http://localhost:6565/api/employees/add";
+        : "http://localhost:6565/api/employees";
       
       const method = currentEmployee ? "PUT" : "POST";
       

@@ -14,8 +14,12 @@ module.exports = {
   // Create employee
   async addEmployee(req, res) {
     try {
+      console.log("Add employee"+req.user.retailerId);
      
-      const employeeData = req.body;
+      const employeeData = {
+        ...req.body,
+        retailerId: req.user.retailerId, 
+      };
       
       const employee = await employeeService.createEmployee(employeeData);
       res.status(201).json({
@@ -39,12 +43,12 @@ module.exports = {
       const userData=await Employee.findById(id).select("-password");
       if(!userData)
       {
-        res.status(400).json({
+        return res.status(400).json({
           success: false,
           message: "No Employee Found"
         });
       }
-      return res.status(200).json(
+       res.status(200).json(
         {
           success: true,
         data:userData,
@@ -61,10 +65,15 @@ module.exports = {
   // Get all employees
   async getEmployees(req, res) {
     try {
-      const { page, limit, retailerId, role } = req.query;
+      const { role, retailerId, id } = req.user;
+
+      if ((role === "admin" || role === "owner") && !retailerId) {
+        return res.status(400).json({
+          success: false,
+          message: "Retailer ID is required for admin/owner role"
+        });
+      }
       const employees = await employeeService.getAllEmployees({
-        page: parseInt(page) || 1,
-        limit: parseInt(limit) || 10,
         retailerId,
         role
       });

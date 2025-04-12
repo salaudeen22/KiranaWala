@@ -4,6 +4,7 @@ const { generateAuthToken, createSendToken } = require("../utils/auth");
 const { sendWelcomeEmail } = require("../utils/sendMail");
 const mongoose=require("mongoose");
 const jwt = require("jsonwebtoken");
+const vendorSchema = require("../model/vendorSchema");
 
 class EmployeeService {
 
@@ -53,23 +54,20 @@ class EmployeeService {
   }
 
   // Get all employees with pagination
-  async getAllEmployees({ page = 1, limit = 10, retailerId, role }) {
-    const query = {};
-    if (retailerId) query.retailerId = retailerId;
-    if (role) query.role = role;
-
-    const options = {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      select: "-password -__v",
-      populate: {
-        path: "retailerId",
-        select: "name displayName",
-      },
-    };
-
-    return await Employee.paginate(query, options);
+  async getAllEmployees({ retailerId, role }) {
+    // console.log("Retailer id"+retailerId);
+    const vendor = await vendorSchema.findById(retailerId).populate('employees');
+    // console.log("Vendor"+vendor);
+  
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+  
+    let employees = vendor.employees;
+  
+  
+  
+    return employees;
   }
 
   // Get employee by ID

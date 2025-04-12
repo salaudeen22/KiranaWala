@@ -8,19 +8,24 @@ import {
   FaChevronRight
 } from "react-icons/fa";
 import { useSidebar } from "../../context/ToggleSideBar";
+import { useUser } from "../../context/userContext";
 
 const Sidebar = () => {
   const { isSidebarOpen } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useUser(); // Get the user object from context
 
   const menuItems = [
-    { path: "/home/dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
-    { path: "/home/inventory", icon: <FaBox />, label: "Inventory" },
-    { path: "/home/sales", icon: <FaCalculator />, label: "Billing" },
-    { path: "/home/usermanagment", icon: <FaUserFriends />, label: "User Management" },
-    { path: "/home/profile", icon: <FaUserEdit />, label: "Edit Profile" }
+    { path: "/home/dashboard", icon: <FaTachometerAlt />, label: "Dashboard", roles: ["admin", "manager", "employee"] },
+    { path: "/home/inventory", icon: <FaBox />, label: "Inventory", roles: ["admin", "manager", "inventory_staff"] },
+    { path: "/home/sales", icon: <FaCalculator />, label: "Billing", roles: ["cashier", "manager"] },
+    { path: "/home/usermanagment", icon: <FaUserFriends />, label: "User Management", roles: ["admin"] },
+    { path: "/home/profile", icon: <FaUserEdit />, label: "Edit Profile", roles: ["admin", "manager", "employee", "cashier"] }
   ];
+
+  // Filter menu items based on the user's role
+  const filteredMenuItems = menuItems.filter(item => item.roles.includes(user?.role));
 
   return (
     <div
@@ -33,7 +38,7 @@ const Sidebar = () => {
       </div>
       
       <ul className="space-y-2">
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <li
             key={item.path}
             className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 hover:bg-amber-400 hover:shadow-md cursor-pointer ${

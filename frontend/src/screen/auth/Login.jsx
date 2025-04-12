@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useUser } from "../../context/userContext";
 import { motion } from "framer-motion";
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser } from "react-icons/fi";
+import { useState } from "react";
 import { FaStore, FaUserTie, FaUserCog } from "react-icons/fa";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUser } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -12,16 +13,17 @@ const Login = () => {
   const [error, setError] = useState("");
   const [userType, setUserType] = useState("vendor"); // 'vendor', 'employee', or 'admin'
   const navigate = useNavigate();
+  const { login } = useUser();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
       // Determine the appropriate API endpoint based on user type
       let endpoint = "";
-      switch(userType) {
+      switch (userType) {
         case "vendor":
           endpoint = "http://localhost:6565/api/owners/login";
           break;
@@ -34,7 +36,7 @@ const Login = () => {
         default:
           endpoint = "http://localhost:6565/api/vendor/auth/login";
       }
-      
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -42,50 +44,27 @@ const Login = () => {
         },
         body: JSON.stringify({ email, password }),
       });
-     
-      
+
       const json = await response.json();
       console.log(json);
-      
+
       if (response.status === 200) {
-        localStorage.setItem("token", json.token);
-        
-        // Store different IDs based on user type
-        if (userType === "vendor") {
-          localStorage.setItem("Id", json.data.user._id);
-          localStorage.setItem("email", json.data.user.email);
-          localStorage.setItem("role", json.data.user.role);
-        } else if (userType === "employee") {
-      
-          localStorage.setItem("Id", json.data.user._id); 
-          localStorage.setItem("email", json.data.user.email);
-          localStorage.setItem("role", json.data.user.role);
-           
-          
-        } else if (userType === "admin") {
-          localStorage.setItem("Id", json.data.user._id);
-          localStorage.setItem("email", json.data.user.email);
-          localStorage.setItem("role", json.data.user.role);
-        }
-        
-        // Success animation before navigation
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Redirect to appropriate dashboard based on user type
-        switch(userType) {
-          case "vendor":
-            navigate("/home/dashboard");
-            break;
-          case "employee":
-            // navigate("/employee/dashboard");
-            navigate("/home/dashboard");
-            break;
-          case "admin":
-            // navigate("/home/dashboard");
-            navigate("/home/dashboard");
-            break;
-          default:
-            navigate("/");
+       
+       
+        const userData = {
+          ...json.data.user,
+          role: json.data.user.role, // Use the specific role from the backend
+        };
+
+        login(userData, json.token);
+        if (userData.role === "manager") {
+          navigate("/home/dashboard");
+        } else if (userData.role === "cashier") {
+          navigate("/home/sales");
+        } else if (userData.role === "delivery_coordinator") {
+          navigate("/home/delivery");
+        } else {
+          navigate("/home/dashboard"); 
         }
       } else {
         setError(json.message || "Invalid credentials");
@@ -100,7 +79,7 @@ const Login = () => {
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-400 to-indigo-600 p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -122,12 +101,18 @@ const Login = () => {
               <FaUserCog className="text-white text-6xl mx-auto mb-4" />
             )}
             <h1 className="text-4xl font-bold text-white mb-2">
-              {userType === "vendor" ? "KiranaWalla" : 
-               userType === "employee" ? "Employee Portal" : "Admin Portal"}
+              {userType === "vendor"
+                ? "KiranaWalla"
+                : userType === "employee"
+                ? "Employee Portal"
+                : "Admin Portal"}
             </h1>
             <p className="text-blue-100 text-lg">
-              {userType === "vendor" ? "Your neighborhood store management" :
-               userType === "employee" ? "Access your work dashboard" : "System administration"}
+              {userType === "vendor"
+                ? "Your neighborhood store management"
+                : userType === "employee"
+                ? "Access your work dashboard"
+                : "System administration"}
             </p>
           </motion.div>
         </div>
@@ -136,12 +121,18 @@ const Login = () => {
         <div className="w-full md:w-1/2 p-8 md:p-10">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              {userType === "vendor" ? "Vendor Login" : 
-               userType === "employee" ? "Employee Login" : "Admin Login"}
+              {userType === "vendor"
+                ? "Vendor Login"
+                : userType === "employee"
+                ? "Employee Login"
+                : "Admin Login"}
             </h2>
             <p className="text-gray-600">
-              {userType === "vendor" ? "Sign in to manage your store" :
-               userType === "employee" ? "Sign in to access your tasks" : "Sign in to administer the system"}
+              {userType === "vendor"
+                ? "Sign in to manage your store"
+                : userType === "employee"
+                ? "Sign in to access your tasks"
+                : "Sign in to administer the system"}
             </p>
           </div>
 
@@ -185,7 +176,7 @@ const Login = () => {
           </div>
 
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 rounded"
@@ -239,7 +230,10 @@ const Login = () => {
                   id="remember"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
+                <label
+                  htmlFor="remember"
+                  className="ml-2 text-sm text-gray-600"
+                >
                   Remember me
                 </label>
               </div>
@@ -253,18 +247,40 @@ const Login = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-lg font-bold text-white transition ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+              className={`w-full py-3 px-4 rounded-lg font-bold text-white transition ${
+                isLoading
+                  ? "bg-blue-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Signing in...
                 </span>
               ) : (
-                `Sign In as ${userType.charAt(0).toUpperCase() + userType.slice(1)}`
+                `Sign In as ${
+                  userType.charAt(0).toUpperCase() + userType.slice(1)
+                }`
               )}
             </motion.button>
           </form>
@@ -272,8 +288,11 @@ const Login = () => {
           {userType === "vendor" && (
             <div className="mt-6 text-center">
               <p className="text-gray-600">
-                Don't have an account?{' '}
-                <a href="/signup" className="text-blue-600 font-medium hover:underline">
+                Don't have an account?{" "}
+                <a
+                  href="/signup"
+                  className="text-blue-600 font-medium hover:underline"
+                >
                   Sign up
                 </a>
               </p>

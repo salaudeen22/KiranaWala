@@ -12,14 +12,10 @@ const NavBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
-  const { userData, loading } = useUser();
+  const { user, loading } = useUser();
   const dropdownRef = useRef(null);
 
-
-
-  console.log("Navbar userData:", userData);
-
-
+  console.log("Navbar user:", user);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -41,7 +37,8 @@ const NavBar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  if (!userData || loading) return null; 
+  if (!user || loading) return null;
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -93,10 +90,10 @@ const NavBar = () => {
           >
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-white">
-                {userData?.name ?? "Guest"}
+                {user?.name ?? "Guest"}
               </p>
               <p className="text-xs text-amber-100">
-                {(userData.contact?.email || userData.email) ?? "No email"}
+                {(user.contact?.email || user.email) ?? "No email"}
               </p>
             </div>
             <div className="relative">
@@ -122,10 +119,10 @@ const NavBar = () => {
               >
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">
-                    {userData?.name ?? "Guest"}
+                    {user?.name ?? "Guest"}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {userData.contact?.email ?? "No email"}
+                    {user.contact?.email ?? "No email"}
                   </p>
                 </div>
                 <ul className="py-1">

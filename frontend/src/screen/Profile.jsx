@@ -4,17 +4,17 @@ import { FiUser, FiMail, FiPhone, FiCamera, FiSave } from "react-icons/fi";
 import { motion } from "framer-motion";
 
 const Profile = ({ handleUpdateProfile }) => {
-  const { userData, loading, error } = useUser();
+  const { user, loading, error } = useUser();
   const [updatedProfile, setUpdatedProfile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
-    if (userData) {
-      setUpdatedProfile({ ...userData });
-      setImagePreview(userData.profilePicture || "");
+    if (user) {
+      setUpdatedProfile({ ...user });
+      setImagePreview(user.profilePicture || "");
     }
-  }, [userData]);
+  }, [user]);
 
   if (loading) return <div className="text-center p-6">Loading profile...</div>;
   if (error) return <div className="text-center text-red-500 p-6">Error: {error}</div>;

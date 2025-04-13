@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   FiRefreshCw,
   FiBell,
@@ -82,9 +82,12 @@ const Broadcasts = () => {
 
   // Initialize Socket.IO and fetch initial data
   useEffect(() => {
-    const socket = io("http://localhost:6565", {
-      query: { token: localStorage.getItem("retailerId") },
-    });
+    const socket = io("http://localhost:6565");
+
+    const retailerId = localStorage.getItem("retailerId");
+    if (retailerId) {
+      socket.emit("join_retailer", retailerId);
+    }
 
     // Listen for new broadcast notifications
     // socket.on("new_broadcast", (newBroadcast) => {
@@ -103,16 +106,29 @@ const Broadcasts = () => {
     //   const audio = new Audio("/notification.mp3");
     //   audio.play().catch((e) => console.log("Audio play failed:", e));
     // });
-    socket.on("new_order", (order) => {
-      console.log("New order received:", order);
-      alert(`New order received! Order ID: ${order.broadcastId}`);
-    });
-
-    // Listen for status updates
-    socket.on("broadcast_updated", (updatedBroadcast) => {
-      setBroadcasts((prev) =>
-        prev.map((b) => (b._id === updatedBroadcast._id ? updatedBroadcast : b))
-      );
+    socket.on("new_order", (newOrder) => {
+      setNotifications((prev) => [
+        {
+          id: Date.now(),
+          message: `New order in ${newOrder.deliveryAddress.city}`,
+          broadcast: {
+            _id: newOrder.broadcastId, // Use broadcastId as _id for matching
+            deliveryAddress: newOrder.deliveryAddress,
+            createdAt: newOrder.createdAt,
+            // Include other necessary fields if available
+          },
+          read: false,
+          type: "new_order",
+        },
+        ...prev,
+      ]);
+    
+      // Play notification sound
+      // const audio = new Audio("/notification.mp3");
+      // audio.play().catch((e) => console.log("Audio play failed:", e));
+      
+      // Refresh broadcasts to include the new order
+      fetchBroadcasts();
     });
 
     // Fetch initial data
@@ -147,12 +163,11 @@ const Broadcasts = () => {
 
   // Handle notification click
   const handleNotificationClick = (notification) => {
-    // Mark as read
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
     );
-
-    // Find and select the broadcast
+  
+    // Find by broadcastId which was set as _id in the notification
     const matchingBroadcast = broadcasts.find(
       (b) => b._id === notification.broadcast._id
     );

@@ -7,19 +7,7 @@ const { Server } = require("socket.io");
 
 const port = process.env.PORT || 6565;
 const cors = require("cors");
-const morgan = require("morgan"); // Request logging
-const broadcastRoute = require("./router/retailerRoute/broadcastRoutes");
-// Import routes
-const employeeRoute = require("./router/retailerRoute/employeeRoutes");
-
-const ownerRoute = require("./router/retailerRoute/ownerRoutes");
-const productRoute = require("./router/retailerRoute/productRoutes");
-const customerRoute = require("./router/retailerRoute/customerRoutes");
-
-const deliveryRoute = require("./router/retailerRoute/deliveryRoutes");
-const uploadRoute = require("./middleware/upload");
-
-
+const morgan = require("morgan");
 
 // Database connection
 connectdb();
@@ -28,44 +16,54 @@ connectdb();
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+
+// Create HTTP server
 const server = http.createServer(app);
+
+// Socket.IO setup
 const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
   },
-});
-// Attach Socket.IO to the app
-app.set("io", io);
-
-// Handle Socket.IO connections
-io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
-
-  // Join rooms based on user type
-  socket.on("join_room", ({ userId, userType }) => {
-    socket.join(`${userType}_${userId}`);
-    console.log(`${userType}_${userId} joined`);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
-  });
+  path: "/socket.io" // Explicit path
 });
 
+// Make io accessible in routes
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
-// Routes
+// Socket.IO connection handling
+// index.js (server)
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
 
-app.use("/api/employees", employeeRoute);
-app.use("/api/owners", ownerRoute);
+  socket.on('join_retailer', (retailerId) => {
+    socket.join(`retailer_${retailerId}`);
+    console.log(`Retailer ${retailerId} connected`);
+  });
+
+  socket.on('join_customer', (customerId) => {
+    socket.join(`customer_${customerId}`);
+    console.log(`Customer ${customerId} connected`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+// Import routes
+app.use("/api/employees", require("./router/retailerRoute/employeeRoutes"));
+app.use("/api/owners", require("./router/retailerRoute/ownerRoutes"));
 app.use("/api/retailers", require("./router/retailerRoute/retailerRoutes"));
 app.use("/api/analytics", require("./router/retailerRoute/analyticsRoutes"));
-app.use("/api/products", productRoute);
-app.use("/api/customers", customerRoute);
-app.use("/api/broadcasts", broadcastRoute);
-app.use("/api/delivery", deliveryRoute);
-
-app.use("/api", uploadRoute);
+app.use("/api/products", require("./router/retailerRoute/productRoutes"));
+app.use("/api/customers", require("./router/retailerRoute/customerRoutes"));
+app.use("/api/broadcasts", require("./router/retailerRoute/broadcastRoutes"));
+app.use("/api/delivery", require("./router/retailerRoute/deliveryRoutes"));
+app.use("/api", require("./middleware/upload"));
 
 // Health check
 app.get("/", (req, res) => {
@@ -78,6 +76,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

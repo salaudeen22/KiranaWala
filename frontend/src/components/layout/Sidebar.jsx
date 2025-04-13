@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useSidebar } from "../../context/ToggleSideBar";
 import { useUser } from "../../context/userContext";
+import { FiRadio } from "react-icons/fi";
 
 const Sidebar = () => {
   const { isSidebarOpen } = useSidebar();
@@ -21,7 +22,8 @@ const Sidebar = () => {
     { path: "/home/inventory", icon: <FaBox />, label: "Inventory", roles: ["admin", "manager", "inventory_staff"] },
     { path: "/home/sales", icon: <FaCalculator />, label: "Billing", roles: ["cashier", "manager"] },
     { path: "/home/usermanagment", icon: <FaUserFriends />, label: "User Management", roles: ["admin"] },
-    { path: "/home/profile", icon: <FaUserEdit />, label: "Edit Profile", roles: ["admin", "manager", "employee", "cashier"] }
+    { path: "/home/profile", icon: <FaUserEdit />, label: "Edit Profile", roles: ["admin", "manager", "employee", "cashier"] },
+    { path: "/home/broadcasts", icon: <FiRadio />, label: "Broadcasts", roles: ["admin", "manager"] },
   ];
 
   // Filter menu items based on the user's role

@@ -9,7 +9,9 @@ router.post('/',
   broadcastController.createBroadcast
 );
 
-router.get('/', 
+router.get('/', protect, broadcastController.getAvailableBroadcasts);
+
+router.get('/customer', 
   customerProtect, 
   broadcastController.getCustomerBroadcasts
 );

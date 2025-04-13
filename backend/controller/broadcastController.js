@@ -2,6 +2,7 @@ const BroadcastService = require('../service/BroadcastService');
 const asyncHandler = require('express-async-handler');
 const AppError = require('../utils/appError');
 const mongoose = require('mongoose');
+const Retailer = require('../model/vendorSchema');
 
 const Broadcast = require('../model/BroadcastSchema');
 
@@ -135,5 +136,48 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
     data: broadcast,
   });
 });
+exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
+  console.log('Fetching available broadcasts for retailer:', req.user.retailerId);
 
+  const retailer = await Retailer.findById(req.user.retailerId).select('serviceAreas.pincode location');
+  if (!retailer) {
+    return next(new AppError('Retailer not found', 404));
+  }
+
+  console.log('Retailer location:', retailer.location);
+
+  // Extract the coordinates
+  const coordinates = retailer.location.coordinates?.coordinates;
+
+  // Validate retailer location
+  if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
+    return next(new AppError('Retailer location is invalid or missing', 400));
+  }
+
+console.log('Coordinates:', coordinates);
+console.log('Querying broadcasts...');
+  const pincodes = retailer.serviceAreas.map((area) => area.pincode);
+  console.log('Pincodes:', pincodes);
+
+  const broadcasts = await Broadcast.find({
+    status: { $in: ["pending", "accepted", "preparing", "in_transit"] },
+    'deliveryAddress.pincode': { $in: pincodes },
+    location: {
+      $nearSphere: {
+        $geometry: {
+          type: 'Point',
+          coordinates, 
+        },
+        $maxDistance: 5000, // 5km
+      },
+    },
+  }).sort('-createdAt');
+
+  console.log('Broadcasts:', broadcasts);
+
+  res.status(200).json({
+    success: true,
+    data: broadcasts,
+  });
+});
 module.exports = exports;

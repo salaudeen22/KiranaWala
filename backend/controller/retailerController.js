@@ -154,32 +154,35 @@ exports.createEmployeeForRetailer = async (req, res) => {
   }
 };
 
+// controller/retailerController.js
 exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
-  // 1. Get retailer's service area pincodes
-  const retailer = await Retailer.findById(req.user.retailerId).select(
-    "serviceAreas.pincode"
-  );
+  const retailer = await Retailer.findById(req.user.retailerId)
+    .select('location serviceAreas.pincode')
+    .lean();
 
-  const pincodes = retailer.serviceAreas.map((area) => area.pincode);
+  if (!retailer?.location?.coordinates) {
+    return next(new AppError('Retailer location not configured', 400));
+  }
 
-  // 2. Find broadcasts in service area
   const broadcasts = await Broadcast.find({
-    status: "pending",
-    "deliveryAddress.pincode": { $in: pincodes },
-    "location.coordinates": {
+    status: 'pending',
+    'deliveryAddress.pincode': { $in: retailer.serviceAreas.map(a => a.pincode) },
+    location: {
       $nearSphere: {
         $geometry: {
-          type: "Point",
-          coordinates: retailer.location.coordinates,
+          type: 'Point',
+          coordinates: retailer.location.coordinates
         },
-        $maxDistance: 5000, // 5km
-      },
-    },
-  }).sort("-createdAt");
+        $maxDistance: 5000
+      }
+    }
+  })
+  .populate('customerId', 'name phone')
+  .sort('-createdAt');
 
   res.status(200).json({
     success: true,
-    data: broadcasts,
+    data: broadcasts
   });
 });
 

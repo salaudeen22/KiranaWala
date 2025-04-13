@@ -437,34 +437,46 @@ exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
 exports.createBroadcast = asyncHandler(async (req, res, next) => {
   const { products, coordinates, paymentMethod, deliveryAddress } = req.body;
 
-  // Validate required fields
-  if (!products || !coordinates || !paymentMethod || !deliveryAddress) {
-    return next(new AppError("Missing required fields", 400));
+  // Validate coordinates format
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    return next(new AppError('Invalid coordinates format', 400));
   }
 
   // Create broadcast
   const broadcast = await BroadcastService.createBroadcast({
     customerId: req.user.id,
-    products,
+    products: products.map(p => ({
+      productId: p.productId,
+      quantity: p.quantity
+    })),
     coordinates,
     paymentMethod,
-    deliveryAddress,
+    deliveryAddress
   });
 
-  // Notify nearby retailers via Socket.IO
+  // Find and notify eligible retailers
   const io = req.app.get("io");
-  const nearbyRetailers = await BroadcastService.findEligibleRetailers(
-    coordinates,
-    deliveryAddress.pincode,
-    products.map((p) => p.productId)
-  );
+  try {
+    const retailers = await BroadcastService.findEligibleRetailers(
+      coordinates,
+      deliveryAddress.pincode
+    );
 
-  nearbyRetailers.forEach((retailer) => {
-    io.to(`retailer_${retailer._id}`).emit("new_broadcast", broadcast);
-  });
+    // Notify each retailer
+    retailers.forEach(retailer => {
+      io.to(`retailer_${retailer._id}`).emit('new_broadcast', {
+        ...broadcast.toObject(),
+        distance: retailer.distance // Added by geospatial query
+      });
+    });
+
+    console.log(`Notified ${retailers.length} retailers`);
+  } catch (error) {
+    console.error('Retailer notification failed:', error);
+  }
 
   res.status(201).json({
     success: true,
-    data: broadcast,
+    data: broadcast
   });
 });

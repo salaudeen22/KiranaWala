@@ -1,5 +1,6 @@
 import ProtectedRoute from "./components/ProtectedRoute";
 import { UserProvider } from "./context/userContext";
+import Broadcasts from "./screen/Broadcasts";
 import Dashboard from "./screen/Dashboard";
 import HomeScreen from "./screen/HomeScreen";
 import Inventory from "./screen/Inventory";
@@ -52,6 +53,14 @@ const App = () => {
                 allowedRoles={["admin", "manager", "inventory_staff"]}
               >
                 <Inventory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="broadcasts"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                <Broadcasts />
               </ProtectedRoute>
             }
           />

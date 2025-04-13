@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Retailer = require('./vendorSchema');
 
 const BroadcastSchema = new mongoose.Schema({
   customerId: {
@@ -35,7 +36,7 @@ const BroadcastSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number],
-      required: true,
+    
     },
   },
   status: {
@@ -96,8 +97,14 @@ const BroadcastSchema = new mongoose.Schema({
   },
   expiryTime: {
     type: Date,
-    required: true,
+    default: () => new Date(Date.now() + 30*60000) // 30 minutes expiry
   },
+  acceptedAt: Date,
+  deliveredAt: Date,
+  potentialRetailers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Retailer'
+  }]
 });
 
 

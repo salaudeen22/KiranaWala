@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { FiRefreshCw, FiBell, FiX, FiCheck, FiTruck, FiPackage } from "react-icons/fi";
+import {
+  FiRefreshCw,
+  FiBell,
+  FiX,
+  FiCheck,
+  FiTruck,
+  FiPackage,
+} from "react-icons/fi";
 import { io } from "socket.io-client";
 
 const Broadcasts = () => {
@@ -63,7 +70,10 @@ const Broadcasts = () => {
   // Handle accepting a broadcast
   const handleAcceptBroadcast = async (broadcastId) => {
     try {
-      const updatedBroadcast = await updateBroadcastStatus(broadcastId, "accepted");
+      const updatedBroadcast = await updateBroadcastStatus(
+        broadcastId,
+        "accepted"
+      );
       setSelectedBroadcast(updatedBroadcast);
     } catch (error) {
       console.error("Error accepting broadcast:", error);
@@ -73,25 +83,29 @@ const Broadcasts = () => {
   // Initialize Socket.IO and fetch initial data
   useEffect(() => {
     const socket = io("http://localhost:6565", {
-      query: { token: localStorage.getItem("token") },
+      query: { token: localStorage.getItem("retailerId") },
     });
 
     // Listen for new broadcast notifications
-    socket.on("new_broadcast", (newBroadcast) => {
-      setNotifications((prev) => [
-        {
-          id: Date.now(),
-          message: `New order in ${newBroadcast.deliveryAddress.city}`,
-          broadcast: newBroadcast,
-          read: false,
-          type: "new_order",
-        },
-        ...prev,
-      ]);
+    // socket.on("new_broadcast", (newBroadcast) => {
+    //   setNotifications((prev) => [
+    //     {
+    //       id: Date.now(),
+    //       message: `New order in ${newBroadcast.deliveryAddress.city}`,
+    //       broadcast: newBroadcast,
+    //       read: false,
+    //       type: "new_order",
+    //     },
+    //     ...prev,
+    //   ]);
 
-      // Play notification sound
-      const audio = new Audio("/notification.mp3");
-      audio.play().catch((e) => console.log("Audio play failed:", e));
+    //   // Play notification sound
+    //   const audio = new Audio("/notification.mp3");
+    //   audio.play().catch((e) => console.log("Audio play failed:", e));
+    // });
+    socket.on("new_order", (order) => {
+      console.log("New order received:", order);
+      alert(`New order received! Order ID: ${order.broadcastId}`);
     });
 
     // Listen for status updates
@@ -123,9 +137,7 @@ const Broadcasts = () => {
 
   // Mark all notifications as read
   const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   // Clear all notifications
@@ -137,9 +149,7 @@ const Broadcasts = () => {
   const handleNotificationClick = (notification) => {
     // Mark as read
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === notification.id ? { ...n, read: true } : n
-      )
+      prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
     );
 
     // Find and select the broadcast
@@ -161,7 +171,10 @@ const Broadcasts = () => {
 
   if (error) {
     return (
-      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+      <div
+        className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4"
+        role="alert"
+      >
         <p className="font-bold">Error</p>
         <p>{error}</p>
         <button
@@ -321,7 +334,10 @@ const Broadcasts = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBroadcasts.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                      <td
+                        colSpan="4"
+                        className="px-6 py-4 text-center text-gray-500"
+                      >
                         No broadcasts found
                       </td>
                     </tr>
@@ -457,9 +473,7 @@ const Broadcasts = () => {
                   >
                     {selectedBroadcast.status
                       .split("_")
-                      .map(
-                        (s) => s.charAt(0).toUpperCase() + s.slice(1)
-                      )
+                      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
                       .join(" ")}
                   </p>
                 </div>
@@ -505,7 +519,10 @@ const Broadcasts = () => {
                             {product.quantity} × {product.productId.name}
                           </span>
                           <span className="text-sm font-medium">
-                            ₹{(product.priceAtPurchase * product.quantity).toFixed(2)}
+                            ₹
+                            {(
+                              product.priceAtPurchase * product.quantity
+                            ).toFixed(2)}
                           </span>
                         </div>
                       </li>

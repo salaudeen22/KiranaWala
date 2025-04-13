@@ -1,10 +1,10 @@
-const BroadcastService = require('../service/BroadcastService');
-const asyncHandler = require('express-async-handler');
-const AppError = require('../utils/appError');
-const mongoose = require('mongoose');
-const Retailer = require('../model/vendorSchema');
+const BroadcastService = require("../service/BroadcastService");
+const asyncHandler = require("express-async-handler");
+const AppError = require("../utils/appError");
+const mongoose = require("mongoose");
+const Retailer = require("../model/vendorSchema");
 
-const Broadcast = require('../model/BroadcastSchema');
+const Broadcast = require("../model/BroadcastSchema");
 
 // @desc    Create a new broadcast
 // @route   POST /api/broadcasts
@@ -12,19 +12,70 @@ const Broadcast = require('../model/BroadcastSchema');
 // In controller/broadcastController.js
 exports.createBroadcast = asyncHandler(async (req, res, next) => {
   const { products, coordinates, paymentMethod, deliveryAddress } = req.body;
-  
-  const broadcast = await BroadcastService.createBroadcast({
-    customerId: req.user.id,
-    products,
-    coordinates,
-    paymentMethod,
-    deliveryAddress
-  });
-  
-  res.status(201).json({
-    success: true,
-    data: broadcast
-  });
+
+  // Validate required fields
+  if (!products || !coordinates || !paymentMethod || !deliveryAddress) {
+    return next(new AppError("Missing required fields", 400));
+  }
+
+  // Validate coordinates format
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    return next(
+      new AppError("Invalid coordinates format [longitude, latitude]", 400)
+    );
+  }
+
+  try {
+    // Create broadcast
+    const broadcast = await BroadcastService.createBroadcast({
+      customerId: req.user.id,
+      products,
+      coordinates,
+      paymentMethod,
+      deliveryAddress,
+    });
+
+    // Find and notify eligible retailers
+    const io = req.app.get("io");
+    try {
+      const retailers = await BroadcastService.findEligibleRetailers(
+        coordinates,
+        deliveryAddress.pincode
+      );
+
+      console.log("Eligible Retailers:", JSON.stringify(retailers, null, 2));
+
+      // Update broadcast with potential retailers
+      await Broadcast.findByIdAndUpdate(broadcast._id, {
+        potentialRetailers: retailers.map((r) => r._id),
+      });
+
+      // Notify each retailer in real-time
+      // Notify each retailer in real-time
+      retailers.forEach((retailer) => {
+        req.io.to(`retailer_${retailer._id}`).emit("new_order", {
+          broadcastId: broadcast._id,
+          customer: broadcast.customerId,
+          totalAmount: broadcast.totalAmount,
+          deliveryAddress: broadcast.deliveryAddress,
+          createdAt: broadcast.createdAt,
+          distance: retailer.distance,
+        });
+      });
+
+      console.log(`Notified ${retailers.length} retailers`);
+    } catch (error) {
+      console.error("Retailer notification failed:", error);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: broadcast,
+    });
+  } catch (error) {
+    console.error("Error creating broadcast:", error);
+    return next(new AppError("Failed to create broadcast", 500));
+  }
 });
 
 // @desc    Accept a broadcast
@@ -59,7 +110,10 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
 
   // Notify the customer
   const io = req.app.get("io");
-  io.to(`customer_${broadcast.customerId}`).emit("broadcast_accepted", broadcast);
+  io.to(`customer_${broadcast.customerId}`).emit(
+    "broadcast_accepted",
+    broadcast
+  );
 
   res.status(200).json({
     success: true,
@@ -71,10 +125,10 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
 // @access  Private (Customer)
 exports.getCustomerBroadcasts = asyncHandler(async (req, res, next) => {
   const broadcasts = await BroadcastService.getCustomerBroadcasts(req.user.id);
-  
+
   res.status(200).json({
     success: true,
-    data: broadcasts
+    data: broadcasts,
   });
 });
 
@@ -86,10 +140,10 @@ exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
     req.params.id,
     req.user.id
   );
-  
+
   res.status(200).json({
     success: true,
-    data: broadcast
+    data: broadcast,
   });
 });
 
@@ -98,10 +152,10 @@ exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
 // @access  Private (Customer/Retailer)
 exports.getBroadcastDetails = asyncHandler(async (req, res, next) => {
   const broadcast = await BroadcastService.getBroadcastDetails(req.params.id);
-  
+
   res.status(200).json({
     success: true,
-    data: broadcast
+    data: broadcast,
   });
 });
 
@@ -115,7 +169,16 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   }
 
   // Update the list of valid statuses
-  const validStatuses = ["pending","ready","in_transit", "accepted", "preparing", "rejected", "delivered", "cancelled"];
+  const validStatuses = [
+    "pending",
+    "ready",
+    "in_transit",
+    "accepted",
+    "preparing",
+    "rejected",
+    "delivered",
+    "cancelled",
+  ];
   if (!validStatuses.includes(status)) {
     return next(new AppError(`Invalid status: ${status}`, 400));
   }
@@ -137,43 +200,48 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   });
 });
 exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
-  console.log('Fetching available broadcasts for retailer:', req.user.retailerId);
+  console.log(
+    "Fetching available broadcasts for retailer:",
+    req.user.retailerId
+  );
 
-  const retailer = await Retailer.findById(req.user.retailerId).select('serviceAreas.pincode location');
+  const retailer = await Retailer.findById(req.user.retailerId).select(
+    "serviceAreas.pincode location"
+  );
   if (!retailer) {
-    return next(new AppError('Retailer not found', 404));
+    return next(new AppError("Retailer not found", 404));
   }
 
-  console.log('Retailer location:', retailer.location);
+  console.log("Retailer location:", retailer.location);
 
   // Extract the coordinates
   const coordinates = retailer.location.coordinates?.coordinates;
 
   // Validate retailer location
   if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-    return next(new AppError('Retailer location is invalid or missing', 400));
+    return next(new AppError("Retailer location is invalid or missing", 400));
   }
 
-console.log('Coordinates:', coordinates);
-console.log('Querying broadcasts...');
+  console.log("Coordinates:", coordinates);
+  console.log("Querying broadcasts...");
   const pincodes = retailer.serviceAreas.map((area) => area.pincode);
-  console.log('Pincodes:', pincodes);
+  console.log("Pincodes:", pincodes);
 
   const broadcasts = await Broadcast.find({
     status: { $in: ["pending", "accepted", "preparing", "in_transit"] },
-    'deliveryAddress.pincode': { $in: pincodes },
+    "deliveryAddress.pincode": { $in: pincodes },
     location: {
       $nearSphere: {
         $geometry: {
-          type: 'Point',
-          coordinates, 
+          type: "Point",
+          coordinates,
         },
         $maxDistance: 5000, // 5km
       },
     },
-  }).sort('-createdAt');
+  }).sort("-createdAt");
 
-  console.log('Broadcasts:', broadcasts);
+  console.log("Broadcasts:", broadcasts);
 
   res.status(200).json({
     success: true,

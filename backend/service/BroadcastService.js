@@ -3,12 +3,12 @@ const Retailer = require("../model/vendorSchema");
 const Product = require("../model/productSchema");
 const Delivery = require("../model/Delivery");
 const AppError = require("../utils/appError");
-const mongoose=require("mongoose");
+const mongoose = require("mongoose");
 
 class BroadcastService {
   static async validateProducts(products) {
     if (!products || !Array.isArray(products)) {
-      throw new AppError('Invalid products format', 400);
+      throw new AppError("Invalid products format", 400);
     }
     const productIds = products.map((p) => p.productId);
     const availableProducts = await Product.find({ _id: { $in: productIds } });
@@ -33,99 +33,132 @@ class BroadcastService {
     return { validProducts, invalidProducts };
   }
 
-    static async createBroadcast({ customerId, products, coordinates, paymentMethod, deliveryAddress }) {
-      if (!customerId || !products || !coordinates || !paymentMethod || !deliveryAddress) {
-        throw new AppError('Missing required fields', 400);
-      }
-  
-      // Validate products
-      console.log("Validating products...");
-      const { validProducts, invalidProducts } = await BroadcastService.validateProducts(products);
-      console.log("Valid Products:", validProducts);
-      console.log("Invalid Products:", invalidProducts);
-  
-      if (invalidProducts.length > 0) {
-        throw new AppError(`Products not available: ${invalidProducts.join(", ")}`, 400);
-      }
-  
-      // Calculate totalAmount and grandTotal
-      const totalAmount = validProducts.reduce((sum, product) => {
-        return sum + product.priceAtPurchase * product.quantity;
-      }, 0);
-  
-      const taxRate = 0.05; // 5% tax
-      const deliveryFee = 20; // Fixed delivery fee
-      const grandTotal = totalAmount * (1 + taxRate) + deliveryFee;
-  
-      // Create broadcast
-      const broadcast = await Broadcast.create({
-        customerId,
-        products: validProducts,
-        location: { type: "Point", coordinates },
-        paymentDetails: { method: paymentMethod, status: "pending" },
-        deliveryAddress,
-        totalAmount,
-        grandTotal,
-        status: "pending",
-        expiryTime: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes expiry
-      });
-  
-      return broadcast;
+  static async createBroadcast({
+    customerId,
+    products,
+    coordinates,
+    paymentMethod,
+    deliveryAddress,
+  }) {
+    if (
+      !customerId ||
+      !products ||
+      !coordinates ||
+      !paymentMethod ||
+      !deliveryAddress
+    ) {
+      throw new AppError("Missing required fields", 400);
     }
-  
 
-  static async findEligibleRetailers(coordinates, pincode, productIds) {
-    return await Retailer.find({
-      "location.coordinates": {
-        $nearSphere: {
-          $geometry: { type: "Point", coordinates },
-          $maxDistance: 5000
-        }
-      },
-      "serviceAreas.pincode": pincode,
-      isActive: true,
-      inventory: {
-        $all: productIds.map(productId => ({
-          $elemMatch: {
-            productId: productId,
-            stock: { $gte: 1 }
-          }
-        }))
-      }
-  }).select('_id name location inventory');
-}
-static async getBroadcastDetails(broadcastId) {
-  if (!mongoose.Types.ObjectId.isValid(broadcastId)) {
-    throw new AppError("Invalid Broadcast ID", 400);
-  }
+    // Validate products
+    console.log("Validating products...");
+    const { validProducts, invalidProducts } =
+      await BroadcastService.validateProducts(products);
+    console.log("Valid Products:", validProducts);
+    console.log("Invalid Products:", invalidProducts);
 
-  const broadcast = await Broadcast.findById(broadcastId).populate(
-    "customerId retailerId products.productId",
-    "name email location price"
-  );
+    if (invalidProducts.length > 0) {
+      throw new AppError(
+        `Products not available: ${invalidProducts.join(", ")}`,
+        400
+      );
+    }
 
-  if (!broadcast) {
-    throw new AppError("Broadcast not found", 404);
-  }
+    // Calculate totalAmount and grandTotal
+    const totalAmount = validProducts.reduce((sum, product) => {
+      return sum + product.priceAtPurchase * product.quantity;
+    }, 0);
 
-  return broadcast;
-}
+    const taxRate = 0.05; // 5% tax
+    const deliveryFee = 20; // Fixed delivery fee
+    const grandTotal = totalAmount * (1 + taxRate) + deliveryFee;
 
-// In service/BroadcastService.js
-static notifyRetailers(retailers, broadcast) {
-  const io = require('../app').io; // Get the io instance from app
-  
-  retailers.forEach(retailer => {
-    io.to(`retailer_${retailer._id}`).emit('new_broadcast', {
-      broadcastId: broadcast._id,
-      products: broadcast.products,
-      deliveryAddress: broadcast.deliveryAddress,
-      expiryTime: broadcast.expiryTime
+    // Create broadcast
+    const broadcast = await Broadcast.create({
+      customerId,
+      products: validProducts,
+      location: { type: "Point", coordinates },
+      paymentDetails: { method: paymentMethod, status: "pending" },
+      deliveryAddress,
+      totalAmount,
+      grandTotal,
+      status: "pending",
+      expiryTime: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes expiry
     });
-  });
-}
 
-}
+    return broadcast.populate("customerId", "name phone");
+  }
 
+  static async getCustomerBroadcasts(customerId) {
+    return await Broadcast.find({ customerId })
+      .sort("-createdAt")
+      .populate("retailerId", "name");
+  }
+  static async cancelBroadcast(broadcastId, customerId) {
+    return await Broadcast.findOneAndUpdate(
+      { _id: broadcastId, customerId, status: "pending" },
+      { status: "cancelled" },
+      { new: true }
+    );
+  }
+
+  static async findEligibleRetailers(coordinates, pincode) {
+    try {
+      // Validate coordinates format
+      if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+        throw new Error("Invalid coordinates format [longitude, latitude]");
+      }
+  
+      // Find retailers within 5km radius and matching the pincode
+      return await Retailer.aggregate([
+        {
+          $match: {
+            isActive: true,
+            "serviceAreas.pincode": pincode, // Match pincode
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error("Error finding eligible retailers:", error);
+      throw error;
+    }
+  }
+  static async getBroadcastDetails(broadcastId) {
+    if (!mongoose.Types.ObjectId.isValid(broadcastId)) {
+      throw new AppError("Invalid Broadcast ID", 400);
+    }
+
+    const broadcast = await Broadcast.findById(broadcastId).populate(
+      "customerId retailerId products.productId",
+      "name email location price"
+    );
+
+    if (!broadcast) {
+      throw new AppError("Broadcast not found", 404);
+    }
+
+    return broadcast;
+  }
+
+  // In service/BroadcastService.js
+  static notifyRetailers(retailers, broadcast) {
+    const io = require("../app").io; // Get the io instance from app
+
+    retailers.forEach((retailer) => {
+      io.to(`retailer_${retailer._id}`).emit("new_broadcast", {
+        broadcastId: broadcast._id,
+        products: broadcast.products,
+        deliveryAddress: broadcast.deliveryAddress,
+        expiryTime: broadcast.expiryTime,
+      });
+    });
+  }
+}
 
 module.exports = BroadcastService;

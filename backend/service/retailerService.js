@@ -33,6 +33,23 @@ exports.deleteRetailer = async (id) => {
   return await Retailer.findByIdAndDelete(id);
 };
 
+// In RetailerService.js
+exports.completeOrder = async (retailerId, products) => {
+  const bulkOps = products.map(product => ({
+    updateOne: {
+      filter: {
+        retailerId: mongoose.Types.ObjectId(retailerId),
+        "inventory.productId": mongoose.Types.ObjectId(product.productId)
+      },
+      update: { 
+        $inc: { "inventory.$.reserved": -product.quantity }
+      }
+    }
+  }));
+
+  await Retailer.bulkWrite(bulkOps);
+};
+
 // retailerController.js
 exports.createEmployeeForRetailer = async (req, res) => {
   try {
@@ -55,3 +72,4 @@ exports.createEmployeeForRetailer = async (req, res) => {
     });
   }
 };
+

@@ -2,6 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const connectdb = require("./database/db");
 const app = express();
+const http = require("http");
+const { Server } = require("socket.io");
+
 const port = process.env.PORT || 6565;
 const cors = require("cors");
 const morgan = require("morgan"); // Request logging
@@ -25,6 +28,31 @@ connectdb();
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+// Attach Socket.IO to the app
+app.set("io", io);
+
+// Handle Socket.IO connections
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  // Join rooms based on user type
+  socket.on("join_room", ({ userId, userType }) => {
+    socket.join(`${userType}_${userId}`);
+    console.log(`${userType}_${userId} joined`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected:", socket.id);
+  });
+});
+
 
 // Routes
 

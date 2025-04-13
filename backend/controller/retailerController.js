@@ -184,7 +184,6 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
 });
 
 exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
-  // 1. Verify broadcast is still available
   const broadcast = await Broadcast.findOneAndUpdate(
     {
       _id: req.params.id,
@@ -203,28 +202,9 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
     return next(new AppError("Broadcast no longer available", 400));
   }
 
-  // 2. Assign delivery person (optimized)
-  const deliveryPerson = await Delivery.findOneAndUpdate(
-    {
-      retailerId: req.user.retailerId,
-      isAvailable: true,
-    },
-    { isAvailable: false },
-    { sort: { rating: -1 }, new: true }
-  );
-
-  if (deliveryPerson) {
-    broadcast.deliveryPersonId = deliveryPerson._id;
-    await broadcast.save();
-  }
-
-  // 3. Notify customer
-  if (io) {
-    io.to(`customer_${broadcast.customerId}`).emit(
-      "broadcast_accepted",
-      broadcast
-    );
-  }
+  // Notify customer
+  const io = req.app.get("io");
+  io.to(`customer_${broadcast.customerId}`).emit("broadcast_accepted", broadcast);
 
   res.status(200).json({
     success: true,

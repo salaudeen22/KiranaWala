@@ -25,6 +25,12 @@ router.get(
   authorize("delivery_coordinator"),
   deliveryController.getMyDeliveries
 );
+router.post(
+  "/assign",
+  protect,
+  authorize("admin", "manager"),
+  deliveryController.assignDelivery
+);
 
 router.patch(
   "/:broadcastId/status",

@@ -25,9 +25,6 @@ router.patch('/:id/cancel',
 );
 
 // Retailer endpoints
-router.patch('/:id/accept', 
-    protect, 
-  broadcastController.acceptBroadcast
-);
-
+router.patch('/:id/accept', protect, broadcastController.acceptBroadcast);
+router.patch("/:id/status", protect, broadcastController.updateBroadcastStatus);
 module.exports = router;

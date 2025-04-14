@@ -63,7 +63,7 @@ const NavBar = () => {
 
           <Link to="/" className="flex items-center space-x-2">
             <span className="self-center text-2xl font-bold text-white">
-              Kiranwalla
+              Kiranawalla
             </span>
           </Link>
         </div>

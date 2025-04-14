@@ -4,7 +4,6 @@ const AutoIncrement = require("mongoose-sequence")(mongoose);
 
 const RetailerSchema = new mongoose.Schema(
   {
-    
     name: {
       type: String,
       required: true,
@@ -253,7 +252,7 @@ const RetailerSchema = new mongoose.Schema(
         type: Number,
         default: 5,
       },
-      deliveryPartners: [String], // Names or IDs of delivery partners
+      deliveryPartners: [String],
     },
     ratings: {
       averageRating: {
@@ -318,8 +317,6 @@ const RetailerSchema = new mongoose.Schema(
   }
 );
 
-
-
 // Text index for search
 RetailerSchema.index({
   name: "text",
@@ -328,9 +325,6 @@ RetailerSchema.index({
   "location.city": "text",
   tags: "text",
 });
-
-
-
 
 // Password encryption middleware
 RetailerSchema.pre("save", async function (next) {
@@ -360,7 +354,6 @@ RetailerSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   }
   return false;
 };
-
 
 RetailerSchema.index({ "location.coordinates": "2dsphere" });
 

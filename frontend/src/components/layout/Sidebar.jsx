@@ -1,15 +1,15 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  FaTachometerAlt, 
-  FaBox, 
-  FaCalculator, 
-  FaUserEdit, 
-  FaUserFriends,
-  FaChevronRight
-} from "react-icons/fa";
 import { useSidebar } from "../../context/ToggleSideBar";
 import { useUser } from "../../context/userContext";
-import { FiRadio } from "react-icons/fi";
+import {
+  FaTachometerAlt,
+  FaBox,
+  FaCalculator,
+  FaUserEdit,
+  FaUserFriends,
+  FaChevronRight,
+} from "react-icons/fa";
+import { FiRadio, FiSettings } from "react-icons/fi";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Sidebar = () => {
   const { isSidebarOpen } = useSidebar();
@@ -18,16 +18,54 @@ const Sidebar = () => {
   const { user } = useUser(); // Get the user object from context
 
   const menuItems = [
-    { path: "/home/dashboard", icon: <FaTachometerAlt />, label: "Dashboard", roles: ["admin", "manager", "employee"] },
-    { path: "/home/inventory", icon: <FaBox />, label: "Inventory", roles: ["admin", "manager", "inventory_staff"] },
-    { path: "/home/sales", icon: <FaCalculator />, label: "Billing", roles: ["cashier", "manager"] },
-    { path: "/home/usermanagment", icon: <FaUserFriends />, label: "User Management", roles: ["admin"] },
-    { path: "/home/profile", icon: <FaUserEdit />, label: "Edit Profile", roles: ["admin", "manager", "employee", "cashier"] },
-    { path: "/home/broadcasts", icon: <FiRadio />, label: "Broadcasts", roles: ["admin", "manager"] },
+    {
+      path: "/home/dashboard",
+      icon: <FaTachometerAlt />,
+      label: "Dashboard",
+      roles: ["admin", "manager", "employee"],
+    },
+    {
+      path: "/home/inventory",
+      icon: <FaBox />,
+      label: "Inventory",
+      roles: ["admin", "manager", "inventory_staff"],
+    },
+    {
+      path: "/home/sales",
+      icon: <FaCalculator />,
+      label: "Billing",
+      roles: ["cashier", "manager"],
+    },
+    {
+      path: "/home/usermanagment",
+      icon: <FaUserFriends />,
+      label: "User Management",
+      roles: ["admin"],
+    },
+    {
+      path: "/home/profile",
+      icon: <FaUserEdit />,
+      label: "Edit Profile",
+      roles: ["admin", "manager", "employee", "cashier"],
+    },
+    {
+      path: "/home/broadcasts",
+      icon: <FiRadio />,
+      label: "Broadcasts",
+      roles: ["admin", "manager"],
+    },
+    {
+      path: "/home/setting",
+      icon: <FiSettings />,
+      label: "Settings",
+      roles: ["admin", "manager"],
+    },
   ];
 
   // Filter menu items based on the user's role
-  const filteredMenuItems = menuItems.filter(item => item.roles.includes(user?.role));
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.roles.includes(user?.role)
+  );
 
   return (
     <div
@@ -38,7 +76,7 @@ const Sidebar = () => {
       <div className="flex items-center justify-center mb-8 p-4">
         <h2 className="text-xl font-bold text-white">Menu</h2>
       </div>
-      
+
       <ul className="space-y-2">
         {filteredMenuItems.map((item) => (
           <li

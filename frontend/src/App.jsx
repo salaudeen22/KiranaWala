@@ -7,6 +7,7 @@ import Inventory from "./screen/Inventory";
 import NotAuthorized from "./screen/NotAuthorized";
 import Profile from "./screen/Profile";
 import Sales from "./screen/Sales";
+import Setting from "./screen/Setting";
 import UserManagement from "./screen/UserManagement";
 import Login from "./screen/auth/Login";
 import OwnerSignUp from "./screen/auth/OwnerSignUp";
@@ -44,6 +45,8 @@ const App = () => {
 
           {/* Dashboard - accessible to all roles */}
           <Route path="dashboard" element={<Dashboard />} />
+
+          <Route path="setting" element={<Setting />} />
 
           {/* Inventory - accessible to admin, manager, inventory_staff */}
           <Route

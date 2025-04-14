@@ -122,11 +122,11 @@ const Broadcasts = () => {
         },
         ...prev,
       ]);
-    
+
       // Play notification sound
       // const audio = new Audio("/notification.mp3");
       // audio.play().catch((e) => console.log("Audio play failed:", e));
-      
+
       // Refresh broadcasts to include the new order
       fetchBroadcasts();
     });
@@ -166,7 +166,7 @@ const Broadcasts = () => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
     );
-  
+
     // Find by broadcastId which was set as _id in the notification
     const matchingBroadcast = broadcasts.find(
       (b) => b._id === notification.broadcast._id
@@ -174,6 +174,23 @@ const Broadcasts = () => {
     if (matchingBroadcast) {
       setSelectedBroadcast(matchingBroadcast);
     }
+  };
+  const handleCancel = () => {
+    try {
+      if (!selectedBroadcast) return;
+
+      const updatedBroadcast = updateBroadcastStatus(
+        selectedBroadcast._id,
+        "cancelled"
+      );
+      setSelectedBroadcast(updatedBroadcast);
+      
+    } catch (error) {
+      console.error("Error cancelling broadcast:", error);
+      
+    }
+
+
   };
 
   if (loading) {
@@ -339,6 +356,9 @@ const Broadcasts = () => {
                       Items
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Address
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -383,6 +403,14 @@ const Broadcasts = () => {
                             ₹{broadcast.totalAmount.toFixed(2)}
                           </div>
                         </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {broadcast.deliveryAddress.street}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {broadcast.deliveryAddress.pincode}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -408,15 +436,23 @@ const Broadcasts = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           {broadcast.status === "pending" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcceptBroadcast(broadcast._id);
-                              }}
-                              className="text-green-600 hover:text-green-900 mr-2"
-                            >
-                              <FiCheck className="inline" />
-                            </button>
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAcceptBroadcast(broadcast._id);
+                                }}
+                                className="text-green-600 hover:text-green-900 mr-2"
+                              >
+                                <FiCheck className="inline" />
+                              </button>
+                              <button
+                                className="text-red-400"
+                                onClick={handleCancel}
+                              >
+                                <FiX />
+                              </button>
+                            </div>
                           )}
                           {broadcast.status === "accepted" && (
                             <button

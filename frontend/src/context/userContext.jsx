@@ -49,7 +49,7 @@ export const UserProvider = ({ children }) => {
         } else if (
           ["manager", "cashier", "inventory_staff", "delivery_coordinator"].includes(role)
         ) {
-          endpoint = `http://localhost:6565/api/employees/`;
+          endpoint = `http://localhost:6565/api/employees/${userId}`;
         } else if (role === "admin") {
           endpoint = `http://localhost:6565/api/retailers/`;
         }

@@ -49,8 +49,6 @@ const Login = () => {
       console.log(json);
 
       if (response.status === 200) {
-       
-       
         const userData = {
           ...json.data.user,
           role: json.data.user.role, // Use the specific role from the backend
@@ -60,11 +58,11 @@ const Login = () => {
         if (userData.role === "manager") {
           navigate("/home/dashboard");
         } else if (userData.role === "cashier") {
-          navigate("/home/sales");
+          navigate("/home/dashboard");
         } else if (userData.role === "delivery_coordinator") {
-          navigate("/home/delivery");
+          navigate("/home/dashboard");
         } else {
-          navigate("/home/dashboard"); 
+          navigate("/home/dashboard");
         }
       } else {
         setError(json.message || "Invalid credentials");

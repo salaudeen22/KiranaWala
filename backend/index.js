@@ -26,7 +26,7 @@ const io = new Server(server, {
     origin: "*",
     methods: ["GET", "POST"],
   },
-  path: "/socket.io" // Explicit path
+  origin: "http://localhost:5173/",
 });
 
 // Make io accessible in routes
@@ -39,6 +39,10 @@ app.use((req, res, next) => {
 // index.js (server)
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
+
+  socket.onAny((event, ...args) => {
+    console.log(`Received event: ${event}`, args);
+  });
 
   socket.on('join_retailer', (retailerId) => {
     socket.join(`retailer_${retailerId}`);

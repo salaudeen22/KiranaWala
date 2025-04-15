@@ -200,10 +200,10 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   });
 });
 exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
-  console.log(
-    "Fetching available broadcasts for retailer:",
-    req.user.retailerId
-  );
+  // console.log(
+  //   "Fetching available broadcasts for retailer:",
+  //   req.user.retailerId
+  // );
 
   const retailer = await Retailer.findById(req.user.retailerId).select(
     "serviceAreas.pincode location"
@@ -212,7 +212,7 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
     return next(new AppError("Retailer not found", 404));
   }
 
-  console.log("Retailer location:", retailer.location);
+  // console.log("Retailer location:", retailer.location);
 
   // Extract the coordinates
   const coordinates = retailer.location.coordinates?.coordinates;
@@ -222,10 +222,10 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
     return next(new AppError("Retailer location is invalid or missing", 400));
   }
 
-  console.log("Coordinates:", coordinates);
+  // console.log("Coordinates:", coordinates);
   console.log("Querying broadcasts...");
   const pincodes = retailer.serviceAreas.map((area) => area.pincode);
-  console.log("Pincodes:", pincodes);
+  // console.log("Pincodes:", pincodes);
 
   const broadcasts = await Broadcast.find({
     status: { $in: ["pending", "accepted", "preparing", "in_transit"] },
@@ -241,7 +241,7 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
     },
   }).sort("-createdAt");
 
-  console.log("Broadcasts:", broadcasts);
+  // console.log("Broadcasts:", broadcasts);
 
   res.status(200).json({
     success: true,

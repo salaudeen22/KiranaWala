@@ -110,7 +110,7 @@ class BroadcastService {
       }
   
       // Find retailers within 5km radius and matching the pincode
-      return await Retailer.aggregate([
+      const retailer= await Retailer.aggregate([
         {
           $match: {
             isActive: true,
@@ -124,6 +124,9 @@ class BroadcastService {
           },
         },
       ]);
+      // console.log("Broadcast",retailer);
+      return retailer;
+   
     } catch (error) {
       console.error("Error finding eligible retailers:", error);
       throw error;

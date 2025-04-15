@@ -8,12 +8,13 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const login = (userData, token) => {
-    // Map backend roles to frontend roles if needed
-    const role = userData.role; // Use as-is or map if necessary
+  
+    const role = userData.role; 
 
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
     localStorage.setItem("Id", userData._id);
+    // console.log("User ID:", userData._id);
     localStorage.setItem("email", userData.email);
 
     setUser({
@@ -53,8 +54,8 @@ export const UserProvider = ({ children }) => {
           endpoint = `http://localhost:6565/api/retailers/`;
         }
     
-        console.log("Role:", role);
-        console.log("Endpoint:", endpoint);
+        // console.log("Role:", role);
+        // console.log("Endpoint:", endpoint);
     
         const response = await fetch(endpoint, {
           headers: {
@@ -81,7 +82,7 @@ export const UserProvider = ({ children }) => {
         
         if (!currentUser) throw new Error("Current user not found");
         
-        console.log("User Data:", data);
+        // console.log("User Data:", data);
     
         setUser({
           ...currentUser,

@@ -7,7 +7,7 @@ import {
   FiTruck,
   FiPackage,
 } from "react-icons/fi";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 
 const Broadcasts = () => {
   const [broadcasts, setBroadcasts] = useState([]);
@@ -33,6 +33,7 @@ const Broadcasts = () => {
       if (!response.ok) throw new Error("Failed to fetch broadcasts");
 
       const data = await response.json();
+      console.log(data);
       setBroadcasts(data.data || []);
     } catch (err) {
       setError(err.message);
@@ -81,7 +82,7 @@ const Broadcasts = () => {
   };
 
   // Initialize Socket.IO and fetch initial data
- 
+
   useEffect(() => {
     const socket = io("http://localhost:6565");
     // console.log(socket);
@@ -109,14 +110,14 @@ const Broadcasts = () => {
         },
         ...prev,
       ]);
-    
 
       for (let i = 0; i < 5; i++) {
-        const audio = new Audio("../../assessts/mixkit-software-interface-remove-2576.wav");
+        const audio = new Audio(
+          "../../assessts/mixkit-software-interface-remove-2576.wav"
+        );
         audio.play().catch((e) => console.log("Audio play failed:", e));
       }
-      
-   
+
       fetchBroadcasts();
     });
 
@@ -130,12 +131,16 @@ const Broadcasts = () => {
 
   // Filter broadcasts based on status
   const filteredBroadcasts = broadcasts.filter((broadcast) => {
+    if (!broadcast.status) return false;
+
+    const status = broadcast.status.toLowerCase();
+
     if (filter === "pending") {
-      return broadcast.status === "pending";
+      return status === "pending";
     } else if (filter === "processing") {
-      return ["accepted", "preparing", "in_transit"].includes(broadcast.status);
+      return ["accepted", "preparing", "in_transit"].includes(status);
     } else if (filter === "completed") {
-      return ["delivered", "cancelled"].includes(broadcast.status);
+      return ["delivered", "cancelled"].includes(status);
     }
     return true;
   });
@@ -155,7 +160,7 @@ const Broadcasts = () => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
     );
-  
+
     // Find by broadcastId which was set as _id in the notification
     const matchingBroadcast = broadcasts.find(
       (b) => b._id === notification.broadcast._id
@@ -190,6 +195,8 @@ const Broadcasts = () => {
       </div>
     );
   }
+  // console.log("All broadcasts:", broadcasts);
+  // console.log("Filter:", filter);
 
   return (
     <div className="container mx-auto px-4 py-6">

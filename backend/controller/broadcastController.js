@@ -225,23 +225,23 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
   // console.log("Coordinates:", coordinates);
   console.log("Querying broadcasts...");
   const pincodes = retailer.serviceAreas.map((area) => area.pincode);
-  // console.log("Pincodes:", pincodes);
+  console.log("Mapping the pincode", pincodes.length);
 
   const broadcasts = await Broadcast.find({
-    status: { $in: ["pending", "accepted", "preparing", "in_transit"] },
+    status: { $in: ["pending"] },
     "deliveryAddress.pincode": { $in: pincodes },
-    location: {
-      $nearSphere: {
-        $geometry: {
-          type: "Point",
-          coordinates,
-        },
-        $maxDistance: 5000, // 5km
-      },
-    },
+    // location: {
+    //   $nearSphere: {
+    //     $geometry: {
+    //       type: "Point",
+    //       coordinates,
+    //     },
+    //     $maxDistance: 5000, // 5km
+    //   },
+    // },
   }).sort("-createdAt");
 
-  // console.log("Broadcasts:", broadcasts);
+  console.log("Broadcasting to db", broadcasts.length);
 
   res.status(200).json({
     success: true,

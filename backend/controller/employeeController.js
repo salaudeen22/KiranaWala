@@ -1,65 +1,57 @@
 const employeeService = require("../service/employeeService");
 const { generateTemporaryPassword } = require("../utils/helpers");
-const mongoose=require('mongoose');
+const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const Employee=require("../model/EmployeeSchema");
-const bcrypt=require("bcrypt");
+const Employee = require("../model/EmployeeSchema");
+const bcrypt = require("bcrypt");
 const vendorSchema = require("../model/vendorSchema");
 const { createSendToken } = require("../utils/auth");
-
-
-
 
 module.exports = {
   // Create employee
   async addEmployee(req, res) {
     try {
-      console.log("Add employee"+req.user.retailerId);
-      console.log("Request Body:", req.body);
-     
+      // console.log("Add employee"+req.user.retailerId);
+      // console.log("Request Body:", req.body);
+
       const employeeData = {
         ...req.body,
-        retailerId: req.user.retailerId, 
+        retailerId: req.user.retailerId,
       };
-      
+
       const employee = await employeeService.createEmployee(employeeData);
       res.status(201).json({
         success: true,
         message: "Employee created successfully",
-        data: employee
+        data: employee,
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
 
-  async getProfile(req,res)
-  {
+  async getProfile(req, res) {
     try {
-      const id=req.user.id;
-      
-      const userData=await Employee.findById(id).select("-password");
-      if(!userData)
-      {
+      const id = req.user.id;
+
+      const userData = await Employee.findById(id).select("-password");
+      if (!userData) {
         return res.status(400).json({
           success: false,
-          message: "No Employee Found"
+          message: "No Employee Found",
         });
       }
-       res.status(200).json(
-        {
-          success: true,
-        data:userData,
-        }
-      )
-      
+      res.status(200).json({
+        success: true,
+        data: userData,
+      });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
@@ -71,63 +63,58 @@ module.exports = {
       if ((role === "admin" || role === "owner") && !retailerId) {
         return res.status(400).json({
           success: false,
-          message: "Retailer ID is required for admin/owner role"
+          message: "Retailer ID is required for admin/owner role",
         });
       }
       const employees = await employeeService.getAllEmployees({
         retailerId,
-        role
+        role,
       });
-      
+
       res.status(200).json({
         success: true,
-        data: employees
+        data: employees,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
 
   // Get single employee
- async getEmployee(req, res) {
-  try {
+  async getEmployee(req, res) {
+    try {
+      console.log("Searching for employee ID:", req.params.id);
 
-    console.log('Searching for employee ID:', req.params.id);
-  
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
-    }
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
 
-    const employee = await employeeService.getEmployeeById(req.params.id);
-    console.log('Found employee:', employee);
-    
-    if (!employee) {
-      console.log('Employee not found1');
-      return res.status(404).json({ 
+      const employee = await employeeService.getEmployeeById(req.params.id);
+      console.log("Found employee:", employee);
+
+      if (!employee) {
+        console.log("Employee not found1");
+        return res.status(404).json({
+          success: false,
+          message: "Employee not found",
+          debug: {
+            searchedId: req.params.id,
+            validObjectId: mongoose.Types.ObjectId.isValid(req.params.id),
+          },
+        });
+      }
+
+      res.status(200).json({ success: true, data: employee });
+    } catch (error) {
+      res.status(500).json({
         success: false,
-        message: "Employee not found",
-        debug: {
-          searchedId: req.params.id,
-          validObjectId: mongoose.Types.ObjectId.isValid(req.params.id)
-        }
+        message: error.message,
       });
     }
-
-  res.status(200).json({ success: true, data: employee });
-
- 
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-}
-,
-
+  },
   // Update employee
   async updateEmployee(req, res) {
     try {
@@ -135,16 +122,16 @@ module.exports = {
         req.params.id,
         req.body
       );
-      
+
       res.status(200).json({
         success: true,
         message: "Employee updated successfully",
-        data: employee
+        data: employee,
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
@@ -155,12 +142,12 @@ module.exports = {
       await employeeService.deleteEmployee(req.params.id);
       res.status(200).json({
         success: true,
-        message: "Employee deleted successfully"
+        message: "Employee deleted successfully",
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
@@ -169,74 +156,70 @@ module.exports = {
 
   async loginEmployee(req, res, next) {
     try {
-        const { email, password} = req.body;
-        
-        // 1. Check if email and password exist
-        if (!email || !password ) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide email, password '
-            });
-        }
+      const { email, password } = req.body;
 
-       
-            // Employee login logic
-            const employee = await Employee.findOne({ email })
-                .select('+password +employmentDetails.isActive');
+      // 1. Check if email and password exist
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide email, password ",
+        });
+      }
 
-            if (!employee) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Employee not found'
-                });
-            }
+      // Employee login logic
+      const employee = await Employee.findOne({ email }).select(
+        "+password +employmentDetails.isActive"
+      );
 
-            // Check if password is correct
-            const isMatch = await bcrypt.compare(password, employee.password);
-            
-            if (!isMatch) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Incorrect email or password'
-                });
-            }
+      if (!employee) {
+        return res.status(401).json({
+          success: false,
+          message: "Employee not found",
+        });
+      }
 
-            // Check if account is active
-            if (!employee.employmentDetails.isActive) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Account deactivated. Please contact admin.'
-                });
-            }
+      // Check if password is correct
+      const isMatch = await bcrypt.compare(password, employee.password);
 
-            // Update last login
-            employee.lastLogin = Date.now();
-            await employee.save();
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Incorrect email or password",
+        });
+      }
 
-            employee.password = undefined;
-            return await createSendToken(employee, 200, res);
-            
+      // Check if account is active
+      if (!employee.employmentDetails.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: "Account deactivated. Please contact admin.",
+        });
+      }
 
-        
+      // Update last login
+      employee.lastLogin = Date.now();
+      await employee.save();
 
+      employee.password = undefined;
+      return await createSendToken(employee, 200, res);
     } catch (err) {
-        next(err);
+      next(err);
     }
-},
+  },
   // Reset password
   async resetPassword(req, res) {
     try {
       const { email, newPassword } = req.body;
       const result = await employeeService.resetPassword(email, newPassword);
-      
+
       res.status(200).json({
         success: true,
-        data: result
+        data: result,
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
@@ -248,16 +231,16 @@ module.exports = {
         req.params.id,
         req.body
       );
-      
+
       res.status(200).json({
         success: true,
         message: "Attendance recorded",
-        data: employee
+        data: employee,
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
@@ -266,22 +249,20 @@ module.exports = {
   async getAttendance(req, res) {
     try {
       const { startDate, endDate } = req.query;
-      const attendance = await employeeService.getAttendance(
-        req.params.id,
-        { startDate, endDate }
-      );
-      
+      const attendance = await employeeService.getAttendance(req.params.id, {
+        startDate,
+        endDate,
+      });
+
       res.status(200).json({
         success: true,
-        data: attendance
+        data: attendance,
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
-  }
-
-  
+  },
 };

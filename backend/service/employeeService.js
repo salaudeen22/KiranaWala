@@ -1,7 +1,7 @@
 const Employee = require("../model/EmployeeSchema");
 const Retailer = require("../model/vendorSchema");
 const { generateAuthToken, createSendToken } = require("../utils/auth");
-const { sendWelcomeEmail } = require("../utils/sendMail");
+const Email = require('../utils/sendMail'); 
 const mongoose=require("mongoose");
 const jwt = require("jsonwebtoken");
 const vendorSchema = require("../model/vendorSchema");
@@ -14,9 +14,9 @@ class EmployeeService {
   // EmployeeService.js
   async createEmployee(employeeData) {
     const session = await mongoose.startSession();
-    console.log("empliyeedata"+employeeData.retailerId);
+    console.log("Started creating the user");
 
-    console.log("Employee Image",employeeData.profileImage)
+    // console.log("Employee Image",employeeData.profileImage)
     session.startTransaction();
     // console.log("employye1");
     // console.log(employeeData);
@@ -29,7 +29,7 @@ class EmployeeService {
 
       // 2. Create and save employee
       const employee = new Employee(employeeData);
-      console.log(employee);
+      // console.log(employee);
       await employee.save({ session });
 
       console.log("retailerDate"+retailer);
@@ -38,12 +38,10 @@ class EmployeeService {
       retailer.employees.push(employee._id);
       await retailer.save({ session });
 
-      // 4. Send welcome email (fire and forget)
-      // sendWelcomeEmail(
-      //   employee.email,
-      //   "Your Employee Account",
-      //   `Credentials:\nEmail: ${employee.email}\nPassword: ${employeeData.password}`
-      // ).catch(console.error);
+      const url = `http://localhost:5173/login`; // You might want to set this in your env
+      await new Email(employee, url).welcomeEmployee();
+
+
 
       await session.commitTransaction();
       return employee;

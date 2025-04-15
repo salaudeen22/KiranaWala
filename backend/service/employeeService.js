@@ -15,6 +15,8 @@ class EmployeeService {
   async createEmployee(employeeData) {
     const session = await mongoose.startSession();
     console.log("empliyeedata"+employeeData.retailerId);
+
+    console.log("Employee Image",employeeData.profileImage)
     session.startTransaction();
     // console.log("employye1");
     // console.log(employeeData);

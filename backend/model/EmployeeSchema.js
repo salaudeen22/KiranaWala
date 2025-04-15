@@ -62,9 +62,10 @@ const EmployeeSchema = new mongoose.Schema({
     }
   },
   profileImage: {
-    url: String,
-    thumbnailUrl: String
+    type: String,
+    required:true,
   },
+
   address: {
     street: String,
     city: String,

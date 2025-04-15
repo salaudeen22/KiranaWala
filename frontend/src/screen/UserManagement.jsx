@@ -63,6 +63,8 @@ const UserManagement = () => {
       // Handle both the array response and the object with data property
       const employees = Array.isArray(responseData) ? responseData : 
                        (responseData.data ? responseData.data : []);
+
+                       console.log(employees);
       
       setEmployeeData(employees);
     } catch (error) {
@@ -150,7 +152,7 @@ const UserManagement = () => {
           panCard: newEmployee.panCard,
           aadhaarCard: newEmployee.aadhaarCard
         },
-        userImage: newEmployee.profileImage
+        profileImage: newEmployee.profileImage
       };
   
       const response = await fetch(url, {

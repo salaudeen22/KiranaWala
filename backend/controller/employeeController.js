@@ -15,6 +15,7 @@ module.exports = {
   async addEmployee(req, res) {
     try {
       console.log("Add employee"+req.user.retailerId);
+      console.log("Request Body:", req.body);
      
       const employeeData = {
         ...req.body,

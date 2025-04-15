@@ -404,15 +404,28 @@ const Broadcasts = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           {broadcast.status === "pending" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcceptBroadcast(broadcast._id);
-                              }}
-                              className="text-green-600 hover:text-green-900 mr-2"
-                            >
-                              <FiCheck className="inline" />
-                            </button>
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAcceptBroadcast(broadcast._id);
+                                }}
+                                className="text-green-600 hover:text-green-900 mr-2"
+                              >
+                                <FiCheck className="inline" />
+                              </button>
+                              <button
+                                className="text-red-600"
+                                onClick={(e) => {
+                                  updateBroadcastStatus(
+                                    broadcast._id,
+                                    "rejected"
+                                  );
+                                }}
+                              >
+                                <FiX />
+                              </button>
+                            </div>
                           )}
                           {broadcast.status === "accepted" && (
                             <button
@@ -477,7 +490,7 @@ const Broadcasts = () => {
                         ? "text-blue-600"
                         : selectedBroadcast.status === "in_transit"
                         ? "text-purple-600"
-                        : selectedBroadcast.status === "delivered"
+                        : selectedBroadcast.status === "completed"
                         ? "text-green-600"
                         : "text-red-600"
                     }`}

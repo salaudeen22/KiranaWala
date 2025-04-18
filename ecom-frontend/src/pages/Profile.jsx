@@ -179,7 +179,7 @@ function Profile() {
   if (!user) return <div className="text-center py-8">Please login to view profile</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className=" p-4">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white">
           <h1 className="text-2xl font-bold">My Profile</h1>

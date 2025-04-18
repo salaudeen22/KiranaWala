@@ -7,6 +7,18 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore user and token from localStorage on app initialization
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    const storedUser = localStorage.getItem('user');
+
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
+
   // Fetch profile when token changes
   useEffect(() => {
     const fetchProfile = async () => {
@@ -15,18 +27,23 @@ export const AuthProvider = ({ children }) => {
         try {
           const response = await fetch('http://localhost:6565/api/customers/profile', {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           });
           const data = await response.json();
           if (response.ok) {
             setUser(data.data);
+            localStorage.setItem('user', JSON.stringify(data.data)); // Persist user data
           } else {
             setUser(null);
+            localStorage.removeItem('user');
+            localStorage.removeItem('authToken');
           }
         } catch (error) {
           console.error('Profile fetch error:', error);
           setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('authToken');
         } finally {
           setLoading(false);
         }
@@ -34,10 +51,9 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-  
+
     fetchProfile();
-  }, [token]); 
-  
+  }, [token]);
 
   const login = async (email, password) => {
     try {
@@ -53,7 +69,8 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         setUser(data.user);
         setToken(data.token);
-        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('authToken', data.token); // Persist token
+        localStorage.setItem('user', JSON.stringify(data.user)); // Persist user data
         return { success: true };
       } else {
         return { success: false, message: data.message || 'Login failed' };
@@ -90,7 +107,7 @@ export const AuthProvider = ({ children }) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(profileData),
       });
@@ -98,6 +115,7 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       if (response.ok) {
         setUser(data.data);
+        localStorage.setItem('user', JSON.stringify(data.data)); // Persist updated user data
         return { success: true };
       } else {
         return { success: false, message: data.message || 'Update failed' };
@@ -111,18 +129,21 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      loading,
-      login, 
-      register,
-      updateProfile,
-      logout 
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        register,
+        updateProfile,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

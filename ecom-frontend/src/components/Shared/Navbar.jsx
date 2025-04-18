@@ -50,12 +50,12 @@ function Navbar() {
             </span>
           </button>
           
-          <button className="p-2 text-gray-600 hover:text-green-600 relative transition-colors">
+          <Link to="/cart" className="p-2 text-gray-600 hover:text-green-600 relative transition-colors">
             <FiShoppingCart size={20} />
             <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               5
             </span>
-          </button>
+          </Link>
           
           {user ? (
             <div className="relative group">

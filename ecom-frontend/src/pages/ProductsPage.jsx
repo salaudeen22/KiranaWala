@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FiShoppingCart, FiHeart, FiLoader } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
-
+import { useDispatchCart } from "../context/CartContext";
 function ProductsPage() {
   const { user } = useAuth();
   const [wishlist, setWishlist] = useState([]);
@@ -10,6 +10,7 @@ function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const dispatch = useDispatchCart();
   const [wishlistLoading, setWishlistLoading] = useState({});
   const [cartLoading, setCartLoading] = useState({});
 
@@ -31,8 +32,71 @@ function ProductsPage() {
         setLoading(false);
       }
     };
+
+    const fetchWishlist = async () => {
+      if (user) {
+        try {
+          const response = await fetch(
+            "http://localhost:6565/api/customers/wishlist",
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+              },
+            }
+          );
+          const data = await response.json();
+          if (data.success) {
+            setWishlist(data.data.map((item) => item.productId));
+          }
+        } catch (err) {
+          console.error("Failed to fetch wishlist:", err);
+        }
+      }
+    };
+
     fetchProducts();
-  }, []);
+    fetchWishlist();
+  }, [user]);
+
+  const addToWishlist = async (productId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:6565/api/customers/wishlist/${productId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setWishlist([...wishlist, productId]);
+      }
+    } catch (err) {
+      console.error("Failed to add to wishlist:", err);
+    }
+  };
+
+  const removeFromWishlist = async (productId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:6565/api/customers/wishlist/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setWishlist(wishlist.filter((id) => id !== productId));
+      }
+    } catch (err) {
+      console.error("Failed to remove from wishlist:", err);
+    }
+  };
 
   const handleWishlistToggle = async (productId) => {
     setWishlistLoading((prev) => ({ ...prev, [productId]: true }));
@@ -46,8 +110,24 @@ function ProductsPage() {
 
   const handleAddToCart = async (productId) => {
     setCartLoading((prev) => ({ ...prev, [productId]: true }));
-    await addToCart(productId);
-    setCartLoading((prev) => ({ ...prev, [productId]: false }));
+    
+    try {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        dispatch({
+          type: "ADD",
+          id: product.id,
+          name: product.name,
+          price: product.finalPrice,
+          qty: 1,
+          img: product.images[0]?.url || ""
+        });
+      }
+    } catch (err) {
+      console.error("Failed to add to cart:", err);
+    } finally {
+      setCartLoading((prev) => ({ ...prev, [productId]: false }));
+    }
   };
 
   if (loading)
@@ -65,7 +145,8 @@ function ProductsPage() {
             key={product.id}
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
           >
-            <Link to={`/products/${product.id}`}>
+            <Link to={`/products/${product.id}`} state={{ product }}>
+
               <div className="h-48 bg-gray-100 flex items-center justify-center">
                 {product.images.length > 0 ? (
                   <img
@@ -133,8 +214,12 @@ function ProductsPage() {
 
                 <button
                   onClick={() => handleAddToCart(product.id)}
-                  disabled={cartLoading[product.id]}
-                  className="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 disabled:opacity-70"
+                  disabled={cartLoading[product.id] || product.stock <= 0}
+                  className={`p-2 rounded-full ${
+                    product.stock > 0
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  } disabled:opacity-70`}
                 >
                   {cartLoading[product.id] ? (
                     <FiLoader className="animate-spin" />

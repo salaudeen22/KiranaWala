@@ -13,7 +13,7 @@ function Sidebar() {
 
   const navItems = [
     { path: "/", icon: FiHome, label: "Home" },
-    { path: "/products", icon: FiShoppingBag, label: "Products" },
+    { path: "/Allproduct", icon: FiShoppingBag, label: "Products" },
     { path: "/deals", icon: FiTag, label: "Hot Deals", badge: "New" },
     { path: "/quick-delivery", icon: FiClock, label: "Quick Delivery" },
     { path: "/wishlist", icon: FiHeart, label: "Wishlist" },

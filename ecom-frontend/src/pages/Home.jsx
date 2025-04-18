@@ -17,9 +17,9 @@ function Home() {
             isSidebarOpen ? "md:ml-64" : "md:ml-20"
           }`}
         >
-          <div className="">
+         
             <Outlet />
-          </div>
+        
         </main>
       </div>
     </div>

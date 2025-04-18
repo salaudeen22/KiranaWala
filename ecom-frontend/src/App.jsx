@@ -13,6 +13,7 @@ import { SidebarProvider } from "./context/SideBarcontext";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   return (
@@ -28,7 +29,8 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<ProductsPage />} />
+              <Route index element={<LandingPage />} />
+              <Route path="Allproduct" element={<ProductsPage />} />
               <Route path="profile" element={<Profile />} />
               <Route path="products/:id" element={<ProductDetailPage />} />
               <Route path="cart" element={<CartPage />} />

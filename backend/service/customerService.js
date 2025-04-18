@@ -2,8 +2,11 @@ const Customer = require("../model/customerSchema");
 const AppError = require("../utils/appError");
 const { signToken } = require("../utils/auth");
 
-const Broadcast=require("../model/BroadcastSchema");
-const Retailer=require("../model/vendorSchema");
+const Broadcast = require("../model/BroadcastSchema");
+const Retailer = require("../model/vendorSchema");
+const Order=require("../model/OrderSchema");
+const Product = require("../model/productSchema");
+const mongoose = require("mongoose");
 
 class CustomerService {
   // Register new customer
@@ -72,6 +75,137 @@ class CustomerService {
     customer.address.push(addressData);
     await customer.save();
     return customer.address;
+  }
+
+  // @desc    Get customer orders
+  // @route   GET /api/customers/orders
+  // @access  Private
+  static async getOrders(userId) {
+    return await Order.find({ customerId: userId })
+      .sort("-createdAt")
+      .populate("items.productId", "name price images");
+  }
+
+  // @desc    Get order details
+  // @route   GET /api/customers/orders/:id
+  // @access  Private
+  static async getOrderDetails(userId, orderId) {
+    const order = await Order.findOne({
+      _id: orderId,
+      customerId: userId,
+    })
+      .populate("items.productId", "name price images")
+      .populate("retailerId", "name phone");
+
+    if (!order) {
+      throw new AppError("Order not found", 404);
+    }
+
+    return order;
+  }
+
+  // @desc    Place an order
+  // @route   POST /api/customers/orders
+  // @access  Private
+  static async placeOrder(userId, orderData) {
+    const { items, deliveryAddress, paymentMethod, retailerId } = orderData;
+
+    // Validate items
+    if (!items || items.length === 0) {
+      throw new AppError("At least one item is required", 400);
+    }
+
+    // Get product details and calculate totals
+    const productIds = items.map((item) => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    // Prepare order items with current prices
+    const orderItems = items.map((item) => {
+      const product = products.find((p) => p._id.equals(item.productId));
+      if (!product) {
+        throw new AppError(`Product ${item.productId} not found`, 404);
+      }
+      if (product.stock < item.quantity) {
+        throw new AppError(
+          `Insufficient stock for product ${product.name}`,
+          400
+        );
+      }
+
+      return {
+        productId: product._id,
+        name: product.name,
+        quantity: item.quantity,
+        price: product.price,
+        discount: product.discount,
+        finalPrice: product.finalPrice,
+        image: product.images[0]?.url || null,
+      };
+    });
+
+    // Calculate totals
+    const subtotal = orderItems.reduce(
+      (sum, item) => sum + item.finalPrice * item.quantity,
+      0
+    );
+    const tax = subtotal * 0.05; // 5% tax
+    const deliveryFee = 20; // Fixed delivery fee
+    const total = subtotal + tax + deliveryFee;
+
+    // Create order
+    const order = await Order.create({
+      customerId: userId,
+      retailerId,
+      items: orderItems,
+      deliveryAddress,
+      paymentMethod,
+      subtotal,
+      tax,
+      deliveryFee,
+      total,
+      status: "pending",
+    });
+
+    // Update product stocks
+    await Promise.all(
+      items.map((item) =>
+        Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: -item.quantity },
+        })
+      )
+    );
+
+    return order;
+  }
+
+  // @desc    Cancel an order
+  // @route   PATCH /api/customers/orders/:id/cancel
+  // @access  Private
+  static async cancelOrder(userId, orderId) {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: orderId,
+        customerId: userId,
+        status: { $in: ["pending", "confirmed"] },
+      },
+      { status: "cancelled" },
+      { new: true }
+    );
+
+    if (!order) {
+      throw new AppError("Order not found or cannot be cancelled", 400);
+    }
+
+    // Restore product stocks
+    await Promise.all(
+      order.items.map((item) =>
+        Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: item.quantity },
+        })
+      )
+    );
+
+    return order;
   }
 
   // Update password
@@ -191,74 +325,72 @@ class CustomerService {
     return customer.wishlist;
   }
 
-
-
-
-   // @desc    Create product broadcast
+  // @desc    Create product broadcast
   // @route   POST /api/customers/broadcasts
   // @access  Private
-  
 
-static async createBroadcast({
-  customerId,
-  products,
-  coordinates,
-  paymentDetails,
-  deliveryAddress,
-  totalAmount,
-  grandTotal
-}) {
-  // Validate products
-  if (!products || products.length === 0) {
-    throw new AppError('At least one product is required', 400);
-  }
-
-  // Verify all products have priceAtPurchase
-  const invalidProducts = products.filter(p => !p.priceAtPurchase);
-  if (invalidProducts.length > 0) {
-    throw new AppError('priceAtPurchase is required for all products', 400);
-  }
-
-  // Create broadcast
-  const broadcast = await Broadcast.create({
+  static async createBroadcast({
     customerId,
     products,
-    location: {
-      type: 'Point',
-      coordinates
-    },
+    coordinates,
     paymentDetails,
     deliveryAddress,
     totalAmount,
     grandTotal,
-    status: 'pending'
-  });
+  }) {
+    // Validate products
+    if (!products || products.length === 0) {
+      throw new AppError("At least one product is required", 400);
+    }
 
-  try {
-    // Find nearby retailers (5km radius)
-    const retailers = await Retailer.find({
-      "location.coordinates": {
-        $nearSphere: {
-          $geometry: {
-            type: "Point",
-            coordinates
-          },
-          $maxDistance: 5000 // 5km in meters
-        }
+    // Verify all products have priceAtPurchase
+    const invalidProducts = products.filter((p) => !p.priceAtPurchase);
+    if (invalidProducts.length > 0) {
+      throw new AppError("priceAtPurchase is required for all products", 400);
+    }
+
+    // Create broadcast
+    const broadcast = await Broadcast.create({
+      customerId,
+      products,
+      location: {
+        type: "Point",
+        coordinates,
       },
-      isActive: true
-    }).select('_id');
+      paymentDetails,
+      deliveryAddress,
+      totalAmount,
+      grandTotal,
+      status: "pending",
+    });
 
-    // Update broadcast with potential retailers
-    broadcast.potentialRetailers = retailers.map(r => ({ retailerId: r._id }));
-    await broadcast.save();
+    try {
+      // Find nearby retailers (5km radius)
+      const retailers = await Retailer.find({
+        "location.coordinates": {
+          $nearSphere: {
+            $geometry: {
+              type: "Point",
+              coordinates,
+            },
+            $maxDistance: 5000, // 5km in meters
+          },
+        },
+        isActive: true,
+      }).select("_id");
 
-    return broadcast;
-  } catch (err) {
-    console.error("Error finding nearby retailers:", err);
-    throw new AppError("Error processing broadcast", 500);
+      // Update broadcast with potential retailers
+      broadcast.potentialRetailers = retailers.map((r) => ({
+        retailerId: r._id,
+      }));
+      await broadcast.save();
+
+      return broadcast;
+    } catch (err) {
+      console.error("Error finding nearby retailers:", err);
+      throw new AppError("Error processing broadcast", 500);
+    }
   }
-}
 
   // @desc    Get customer's active broadcasts
   // @route   GET /api/customers/broadcasts
@@ -266,7 +398,7 @@ static async createBroadcast({
   static async getCustomerBroadcasts(userId) {
     return await Broadcast.find({
       customerId: userId,
-      status: { $in: ["pending", "accepted"] }
+      status: { $in: ["pending", "accepted"] },
     }).sort("-createdAt");
   }
 
@@ -276,7 +408,7 @@ static async createBroadcast({
   static async getBroadcastDetails(userId, broadcastId) {
     const broadcast = await Broadcast.findOne({
       _id: broadcastId,
-      customerId: userId
+      customerId: userId,
     }).populate("potentialRetailers.retailerId", "name location");
 
     if (!broadcast) {
@@ -294,20 +426,21 @@ static async createBroadcast({
       {
         _id: broadcastId,
         customerId: userId,
-        status: "pending"
+        status: "pending",
       },
       { status: "cancelled" },
       { new: true }
     );
 
     if (!broadcast) {
-      throw new AppError("Broadcast not found or already accepted/cancelled", 400);
+      throw new AppError(
+        "Broadcast not found or already accepted/cancelled",
+        400
+      );
     }
 
     return broadcast;
   }
 }
-
-
 
 module.exports = CustomerService;

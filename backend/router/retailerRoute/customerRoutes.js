@@ -33,10 +33,16 @@ router.get('/wallet',customerProtect,  customerController.getWallet);
 router.post('/wallet/topup',customerProtect,  customerController.topUpWallet);
 
 // Wishlist management
+
 router.get('/wishlist',customerProtect,  customerController.getWishlist);
 router.post('/wishlist/:productId',customerProtect,  customerController.addToWishlist);
 router.delete('/wishlist/:productId',customerProtect,  customerController.removeFromWishlist);
 
+
+router.get('/orders', customerProtect, customerController.getOrders);
+router.get('/orders/:id', customerProtect, customerController.getOrderDetails);
+router.post('/orders', customerProtect, customerController.placeOrder);
+router.patch('/orders/:id/cancel', customerProtect, customerController.cancelOrder);
 
 // Broadcast routes
 router.post('/broadcasts', customerProtect, customerController.createBroadcast);

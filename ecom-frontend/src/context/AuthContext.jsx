@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (token) {
+        setLoading(true);
         try {
           const response = await fetch('http://localhost:6565/api/customers/profile', {
             headers: {
@@ -20,9 +21,12 @@ export const AuthProvider = ({ children }) => {
           const data = await response.json();
           if (response.ok) {
             setUser(data.data);
+          } else {
+            setUser(null);
           }
         } catch (error) {
           console.error('Profile fetch error:', error);
+          setUser(null);
         } finally {
           setLoading(false);
         }
@@ -30,9 +34,10 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
+  
     fetchProfile();
-  }, [token]);
+  }, [token]); 
+  
 
   const login = async (email, password) => {
     try {

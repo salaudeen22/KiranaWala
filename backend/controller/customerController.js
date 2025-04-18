@@ -7,6 +7,7 @@ const CustomerService=require("../service/customerService");
 const { v4: uuidv4 } = require('uuid');
 const Product=require("../model/productSchema");
 const Retailer=require("../model/vendorSchema");
+
 // const customerController = require("../controller/customerController");
 
 const  Broadcast=require("../model/BroadcastSchema");
@@ -480,3 +481,59 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
     data: broadcast
   });
 });
+
+// Add these to your existing exports
+
+// @desc    Get customer orders
+// @route   GET /api/customers/orders
+// @access  Private
+exports.getOrders = asyncHandler(async (req, res, next) => {
+  const orders = await CustomerService.getOrders(req.user.id);
+  res.status(200).json({
+    success: true,
+    data: orders
+  });
+});
+
+// @desc    Get order details
+// @route   GET /api/customers/orders/:id
+// @access  Private
+exports.getOrderDetails = asyncHandler(async (req, res, next) => {
+  const order = await CustomerService.getOrderDetails(
+    req.user.id,
+    req.params.id
+  );
+  res.status(200).json({
+    success: true,
+    data: order
+  });
+});
+
+// @desc    Place an order
+// @route   POST /api/customers/orders
+// @access  Private
+exports.placeOrder = asyncHandler(async (req, res, next) => {
+  const order = await CustomerService.placeOrder(
+    req.user.id,
+    req.body
+  );
+  res.status(201).json({
+    success: true,
+    data: order
+  });
+});
+
+// @desc    Cancel an order
+// @route   PATCH /api/customers/orders/:id/cancel
+// @access  Private
+exports.cancelOrder = asyncHandler(async (req, res, next) => {
+  const order = await CustomerService.cancelOrder(
+    req.user.id,
+    req.params.id
+  );
+  res.status(200).json({
+    success: true,
+    data: order
+  });
+});
+

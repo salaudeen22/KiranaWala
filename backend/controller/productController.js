@@ -8,6 +8,11 @@ exports.getPublicProductsByRetailer = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: products });
 });
 
+exports.getAllPublicProducts=asyncHandler(async (req, res) => {
+  const products = await ProductService.getAllPublicProducts();
+  res.status(200).json({ success: true, data: products });
+});
+
 exports.getPublicProduct = asyncHandler(async (req, res) => {
   const product = await ProductService.getPublicProduct(
     req.params.retailerId,

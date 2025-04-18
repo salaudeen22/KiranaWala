@@ -4,6 +4,7 @@ import { FiUser, FiMail, FiPhone, FiEdit, FiSave, FiLock, FiHome, FiMapPin } fro
 
 function Profile() {
   const { user, updateProfile, loading } = useAuth();
+
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

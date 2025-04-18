@@ -9,6 +9,25 @@ class ProductService {
       isAvailable: true 
     }).select('-internalNotes -costPrice');
   }
+  static async getAllPublicProducts() {
+    const products = await Product.find({ isAvailable: true })
+      .select('-internalNotes -costPrice');
+
+    return products.map(product => ({
+      id: product._id,
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      price: product.price,
+      discount: product.discount,
+      finalPrice: product.finalPrice,
+      stock: product.stock,
+      images: product.images,
+      isFeatured: product.isFeatured,
+      tags: product.tags,
+      isAvailable: product.isAvailable
+    }));
+  }
 
   static async getPublicProduct(retailerId, productId) {
     const product = await Product.findOne({ 

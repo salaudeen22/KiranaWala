@@ -1,22 +1,32 @@
 import React from "react";
-import {  Routes,Route} from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import { SidebarProvider } from "./context/SideBarcontext";
+import ProductsPage from "./pages/ProductsPage";
 
-const App = () => {
+
+import { SidebarProvider } from "./context/SideBarcontext";
+import { AuthProvider } from "./context/AuthContext";
+
+function App() {
   return (
-    <SidebarProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/" element={<Home/>} />
-       ` <Route path="/profile" element={<Profile/>} />`
-      </Routes>
-    </SidebarProvider>
+    <AuthProvider>
+      <SidebarProvider>
+        <Routes>
+          <Route path="/" element={<Home />}>
+            <Route index element={<ProductsPage />} />
+            <Route path="profile" element={<Profile />} />
+  
+         
+          </Route>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </SidebarProvider>
+    </AuthProvider>
   );
-};
+}
 
 export default App;

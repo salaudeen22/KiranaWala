@@ -21,7 +21,7 @@ function Sidebar() {
     { path: "/customers", icon: FiUsers, label: "Customers" },
     { type: "divider" },
     { path: "/settings", icon: FiSettings, label: "Settings" },
-    { path: "/help", icon: FiHelpCircle, label: "Help & Support" },
+    { path: "/profile", icon: FiUsers, label: "profile" },
   ];
 
   return (

@@ -37,6 +37,8 @@ exports.register = asyncHandler(async (req, res, next) => {
   createSendToken(customer, 201, res);
 });
 
+
+
 // @desc    Login customer
 // @route   POST /api/customers/login
 // @access  Public
@@ -111,6 +113,17 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: updatedCustomer
+  });
+});
+
+exports.getAllAddress = asyncHandler(async (req, res, next) => {
+  const customer = await Customer.findById(req.user.id).select('address');
+  if (!customer) {
+    return next(new AppError('Customer not found', 404));
+  }
+  res.status(200).json({
+    success: true,
+    data: customer.address
   });
 });
 

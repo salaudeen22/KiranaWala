@@ -24,6 +24,7 @@ router.delete('/profile',customerProtect, customerController.deleteAccount);
 
 
 // Address management
+router.get('/Alladdress',customerProtect,  customerController.getAllAddress);
 router.post('/address',customerProtect,  customerController.addAddress);
 router.put('/address/:addressId',customerProtect,  customerController.updateAddress);
 router.delete('/address/:addressId',customerProtect,  customerController.deleteAddress);

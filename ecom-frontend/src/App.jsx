@@ -1,17 +1,17 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import ProductsPage from './pages/ProductsPage';
-import ProductDetailPage from './pages/ProductDetailPage';
-import CartPage from './pages/CartPage';
-import Wishlist from './pages/Wishlist';
-import { SidebarProvider } from './context/SideBarcontext';
-import { AuthProvider } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import ProductsPage from "./pages/ProductsPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import CartPage from "./pages/CartPage";
+import Wishlist from "./pages/Wishlist";
+import { SidebarProvider } from "./context/SideBarcontext";
+import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (

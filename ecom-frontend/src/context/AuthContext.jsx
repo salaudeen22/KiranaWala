@@ -1,11 +1,38 @@
-
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch profile when token changes
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:6565/api/customers/profile', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setUser(data.data);
+          }
+        } catch (error) {
+          console.error('Profile fetch error:', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [token]);
 
   const login = async (email, password) => {
     try {
@@ -21,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         setUser(data.user);
         setToken(data.token);
+        localStorage.setItem('authToken', data.token);
         return { success: true };
       } else {
         return { success: false, message: data.message || 'Login failed' };
@@ -51,17 +79,43 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (profileData) => {
+    try {
+      const response = await fetch('http://localhost:6565/api/customers/profile-update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data.data);
+        return { success: true };
+      } else {
+        return { success: false, message: data.message || 'Update failed' };
+      }
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem('authToken');
   };
 
   return (
     <AuthContext.Provider value={{ 
       user, 
       token, 
+      loading,
       login, 
-      register, // Make sure this is included
+      register,
+      updateProfile,
       logout 
     }}>
       {children}
@@ -69,7 +123,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Make sure this hook is properly exported
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
+import Wishlist from './pages/Wishlist';
 import { SidebarProvider } from './context/SideBarcontext';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -16,7 +17,6 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-   
         <SidebarProvider>
           <Routes>
             <Route
@@ -31,13 +31,14 @@ function App() {
               <Route path="profile" element={<Profile />} />
               <Route path="products/:id" element={<ProductDetailPage />} />
               <Route path="cart" element={<CartPage />} />
+              <Route path="wishlist" element={<Wishlist />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Routes>
         </SidebarProvider>
-        </CartProvider>
-      </AuthProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

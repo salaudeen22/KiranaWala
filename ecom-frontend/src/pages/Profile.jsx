@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   FiUser, FiMail, FiPhone, FiEdit, FiSave, 
-  FiLock, FiHome, FiMapPin, FiTrash2, FiPlus 
+  FiLock, FiHome, FiMapPin, FiTrash2, FiPlus, FiHeart 
 } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 function Profile() {
   const { user, updateProfile, loading } = useAuth();
@@ -456,6 +457,19 @@ function Profile() {
                 </div>
                 <span className="text-gray-400">→</span>
               </button>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-gray-200 pt-6">
+            <h2 className="text-xl font-semibold mb-4">Wishlist</h2>
+            <div className="space-y-3">
+              <Link to="/wishlist" className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                <div className="flex items-center">
+                  <FiHeart className="text-gray-500 mr-3" />
+                  <span>View Wishlist</span>
+                </div>
+                <span className="text-gray-400">→</span>
+              </Link>
             </div>
           </div>
         </div>

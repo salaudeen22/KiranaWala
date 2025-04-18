@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await fetch('http://localhost:6565/api/customers/profile-update', {
+      const response = await fetch('http://localhost:6565/api/customers/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -17,10 +17,8 @@ function Sidebar() {
     { path: "/deals", icon: FiTag, label: "Hot Deals", badge: "New" },
     { path: "/quick-delivery", icon: FiClock, label: "Quick Delivery" },
     { path: "/wishlist", icon: FiHeart, label: "Wishlist" },
-    { path: "/orders", icon: FiTruck, label: "My Orders" },
- 
-    { path: "/customers", icon: FiUsers, label: "Customers" },
-    { type: "divider", label: "Account" },
+    { path: "/my-orders", icon: FiTruck, label: "My Orders" }, 
+
     { path: "/settings", icon: FiSettings, label: "Settings" },
     { path: "/profile", icon: FiUsers, label: "My Profile" },
     { path: "/help", icon: FiHelpCircle, label: "Help Center" },

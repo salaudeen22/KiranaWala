@@ -45,16 +45,12 @@ function Navbar() {
         <div className="flex items-center space-x-4">
           <Link to="/wishlist" className="p-2 text-gray-600 hover:text-green-600 relative transition-colors">
             <FiHeart size={20} />
-            <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              3
-            </span>
+        
           </Link>
           
           <Link to="/cart" className="p-2 text-gray-600 hover:text-green-600 relative transition-colors">
             <FiShoppingCart size={20} />
-            <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              5
-            </span>
+      
           </Link>
           
           {user ? (

@@ -146,7 +146,6 @@ function ProductsPage() {
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
           >
             <Link to={`/products/${product.id}`} state={{ product }}>
-
               <div className="h-48 bg-gray-100 flex items-center justify-center">
                 {product.images.length > 0 ? (
                   <img
@@ -164,6 +163,7 @@ function ProductsPage() {
               <div className="flex justify-between items-start">
                 <Link
                   to={`/products/${product.id}`}
+                  state={{ product }}
                   className="hover:text-green-600"
                 >
                   <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
@@ -213,7 +213,10 @@ function ProductsPage() {
                 </div>
 
                 <button
-                  onClick={() => handleAddToCart(product.id)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent navigation
+                    handleAddToCart(product.id);
+                  }}
                   disabled={cartLoading[product.id] || product.stock <= 0}
                   className={`p-2 rounded-full ${
                     product.stock > 0

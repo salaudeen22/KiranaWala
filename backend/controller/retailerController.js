@@ -214,3 +214,27 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
     data: broadcast,
   });
 });
+
+exports.updateServiceArea = async (req, res) => {
+  try {
+    const { retailerId, serviceablePincodes } = req.body;
+
+    if (!retailerId || !serviceablePincodes) {
+      return res.status(400).json({ message: 'Retailer ID and serviceable pincodes are required.' });
+    }
+
+    const retailer = await Retailer.findByIdAndUpdate(
+      retailerId,
+      { serviceablePincodes },
+      { new: true }
+    );
+
+    if (!retailer) {
+      return res.status(404).json({ message: 'Retailer not found.' });
+    }
+
+    res.status(200).json({ message: 'Service area updated successfully.', retailer });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating service area.', error });
+  }
+};

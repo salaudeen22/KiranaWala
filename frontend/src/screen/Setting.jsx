@@ -60,6 +60,30 @@ function Setting() {
     });
   };
 
+  const handleAddServiceArea = () => {
+    setFormData(prev => ({
+      ...prev,
+      serviceAreas: [
+        ...prev.serviceAreas,
+        {
+          pincode: '',
+          serviceAvailable: true,
+          deliveryFee: 0,
+          minOrderAmount: 0,
+          estimatedDeliveryTime: 0,
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveServiceArea = (index) => {
+    setFormData(prev => {
+      const newServiceAreas = [...prev.serviceAreas];
+      newServiceAreas.splice(index, 1);
+      return { ...prev, serviceAreas: newServiceAreas };
+    });
+  };
+
   const handleSave = async () => {
     if (!formData) return;
     
@@ -335,18 +359,21 @@ function Setting() {
                 <h3 className="font-medium mb-2">Service Areas</h3>
                 <div className="space-y-4">
                   {formData.serviceAreas.map((area, index) => (
-                    <div key={area.pincode} className="border p-4 rounded-lg">
+                    <div key={index} className="border p-4 rounded-lg">
                       <div className="flex justify-between mb-2">
-                        <span className="font-medium">Pincode: {area.pincode}</span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="sr-only peer" 
-                            checked={area.serviceAvailable}
-                            onChange={(e) => handleServiceAreaChange(index, 'serviceAvailable', e.target.checked)}
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter Pincode"
+                          value={area.pincode}
+                          onChange={(e) => handleServiceAreaChange(index, 'pincode', e.target.value)}
+                          className="w-1/2 px-3 py-2 border rounded-lg"
+                        />
+                        <button
+                          className="text-red-500 hover:underline"
+                          onClick={() => handleRemoveServiceArea(index)}
+                        >
+                          Remove
+                        </button>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -379,6 +406,12 @@ function Setting() {
                       </div>
                     </div>
                   ))}
+                  <button
+                    className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    onClick={handleAddServiceArea}
+                  >
+                    Add Service Area
+                  </button>
                 </div>
               </div>
             </div>

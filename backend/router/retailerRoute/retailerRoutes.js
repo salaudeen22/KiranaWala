@@ -17,4 +17,7 @@ router.delete('/', retailerController.deleteRetailer);
 // Employee management
 router.post('/employees', retailerController.createEmployeeForRetailer);
 
+// Service area management
+router.patch('/service-area', retailerController.updateServiceArea);
+
 module.exports = router;

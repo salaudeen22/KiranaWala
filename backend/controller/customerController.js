@@ -8,8 +8,6 @@ const { v4: uuidv4 } = require('uuid');
 const Product=require("../model/productSchema");
 const Retailer=require("../model/vendorSchema");
 
-// const customerController = require("../controller/customerController");
-
 const  Broadcast=require("../model/BroadcastSchema");
 const BroadcastService=require("../service/BroadcastService");
 
@@ -36,8 +34,6 @@ exports.register = asyncHandler(async (req, res, next) => {
   // 3) Generate token and send response
   createSendToken(customer, 201, res);
 });
-
-
 
 // @desc    Login customer
 // @route   POST /api/customers/login
@@ -131,31 +127,45 @@ exports.getAllAddress = asyncHandler(async (req, res, next) => {
 // @route   POST /api/customers/address
 // @access  Private
 exports.addAddress = asyncHandler(async (req, res, next) => {
-  const customer = await Customer.findById(req.user.id);
+  try {
+    const { id: customerId } = req.user; // Ensure customerId is correctly retrieved
+    const newAddress = req.body;
 
-  // 1) Check if address already exists
-  const addressExists = customer.address.some(
-    addr => addr.pincode === req.body.pincode && 
-            addr.street === req.body.street
-  );
+    // Generate a unique addressId
+    newAddress.addressId = uuidv4();
 
-  if (addressExists) {
-    return next(new AppError('Address already exists', 400));
+    // Find the customer by ID
+    const customer = await Customer.findById(customerId);
+
+    // Handle case where customer is not found
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    // Check if the address already exists
+    const isDuplicate = customer.address.some(
+      (addr) =>
+        addr.street === newAddress.street &&
+        addr.city === newAddress.city &&
+        addr.state === newAddress.state &&
+        addr.pincode === newAddress.pincode
+    );
+
+    if (isDuplicate) {
+      return res.status(400).json({ message: "Address already exists" });
+    }
+
+    // Add the new address
+    customer.address.push(newAddress);
+
+    // Save the customer document
+    await customer.save();
+
+    res.status(201).json({ message: "Address added successfully", data: customer.address });
+  } catch (error) {
+    console.error("Error adding address:", error);
+    res.status(500).json({ message: "Failed to add address" });
   }
-
-  // 2) Add new address with a generated UUID
-  const newAddress = {
-    addressId: uuidv4(),  // Generate unique ID
-    ...req.body
-  };
-
-  customer.address.push(newAddress);
-  await customer.save();
-
-  res.status(200).json({
-    success: true,
-    data: customer.address
-  });
 });
 
 // @desc    Delete address
@@ -201,7 +211,6 @@ exports.updatePassword = asyncHandler(async (req, res, next) => {
   // 3) Log customer in with new token
   createSendToken(customer, 200, res);
 });
-
 
 // @desc    Delete account
 // @route   DELETE /api/customers/profile
@@ -272,182 +281,9 @@ exports.removeFromWishlist = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, data: wishlist });
 });
 
-
 // @desc    Create product broadcast
 // @route   POST /api/customers/broadcasts
 // @access  Private
-// exports.createBroadcast = asyncHandler(async (req, res, next) => {
-//   const { products, coordinates, paymentDetails, deliveryAddress } = req.body;
-  
-//   // Validate required fields
-//   if (!products || !coordinates || !paymentDetails || !deliveryAddress) {
-//     return next(new AppError('Missing required fields', 400));
-//   }
-
-//   // Calculate totals with proper error handling
-//   let totalAmount, grandTotal;
-//   try {
-//     totalAmount = products.reduce((sum, product) => {
-//       if (!product.priceAtPurchase) {
-//         throw new AppError('priceAtPurchase is required for all products', 400);
-//       }
-//       return sum + (product.priceAtPurchase * product.quantity);
-//     }, 0);
-
-//     // Calculate grand total (including tax/delivery)
-//     const taxRate = 0.05; // 5% tax
-//     const deliveryCharge = 20; // Fixed delivery charge
-//     grandTotal = totalAmount * (1 + taxRate) + deliveryCharge;
-//   } catch (err) {
-//     return next(err);
-//   }
-
-//   const broadcast = await CustomerService.createBroadcast({
-//     customerId: req.user.id,
-//     products: products.map(p => ({
-//       productId: p.productId,
-//       quantity: p.quantity,
-//       priceAtPurchase: p.priceAtPurchase
-//     })),
-//     coordinates,
-//     paymentDetails,
-//     deliveryAddress,
-//     totalAmount,
-//     grandTotal
-//   });
-
-//   res.status(201).json({
-//     success: true,
-//     data: broadcast
-//   });
-// // });
-// exports.createBroadcast = asyncHandler(async (req, res, next) => {
-//   const { products, coordinates, paymentMethod, deliveryAddress } = req.body;
-
-//   // Validate required fields
-//   if (!deliveryAddress || !deliveryAddress.state) {
-//     return next(new AppError('State is required in delivery address', 400));
-//   }
-
-//   // Validate all required delivery address fields
-//   const requiredAddressFields = ['street', 'city', 'state', 'pincode', 'contactNumber'];
-//   const missingFields = requiredAddressFields.filter(field => !deliveryAddress[field]);
-  
-//   if (missingFields.length > 0) {
-//     return next(new AppError(
-//       `Missing required delivery address fields: ${missingFields.join(', ')}`, 
-//       400
-//     ));
-//   }
-  
-//   // 1. Validate products and calculate totals
-//   const productDocs = await Product.find({
-//     _id: { $in: products.map(p => p.productId) }
-//   }).lean();
-  
-//   if (productDocs.length !== products.length) {
-//     return next(new AppError("Some products not found", 404));
-//   }
-
-//   // 2. Calculate totals with current prices
-//   const processedProducts = products.map(item => {
-//     const product = productDocs.find(p => p._id.equals(item.productId));
-//     return {
-//       productId: item.productId,
-//       quantity: item.quantity,
-//       priceAtPurchase: product.price // Store current price
-//     };
-//   });
-
-//   const subtotal = processedProducts.reduce((sum, item) => 
-//     sum + (item.priceAtPurchase * item.quantity), 0);
-  
-//   // 3. Create broadcast
-//   const broadcast = await Broadcast.create({
-//     customerId: req.user.id,
-//     products: processedProducts,
-//     location: {
-//       type: "Point",
-//       coordinates
-//     },
-//     paymentDetails: {
-//       method: paymentMethod,
-//       status: "pending"
-//     },
-//     deliveryAddress,
-//     totalAmount: subtotal,
-//     grandTotal: subtotal * 1.05 + 20, // 5% tax + 20 delivery fee
-//     status: "pending"
-//   });
-
-//   // 4. Find nearby retailers (optimized query)
-//   const retailers = await Retailer.find({
-//     "location.coordinates": {
-//       $geoWithin: {
-//         $centerSphere: [coordinates, 5 / 6378.1] // 5km radius
-//       }
-//     },
-//     isActive: true,
-//     "serviceAreas.pincode": deliveryAddress.pincode
-//   }).select('_id name');
-
-//   // 5. Add to potential retailers (without await for better performance)
-//   Broadcast.findByIdAndUpdate(broadcast._id, {
-//     $set: { potentialRetailers: retailers }
-//   }).exec();
-
-//   // 6. Real-time notification (using Socket.io if configured)
-//   if (io) {
-//     retailers.forEach(retailer => {
-//       io.to(`retailer_${retailer._id}`).emit('new_broadcast', broadcast);
-//     });
-//   }
-
-//   res.status(201).json({
-//     success: true,
-//     data: broadcast
-//   });
-// });
-
-// @desc    Get customer's active broadcasts
-// @route   GET /api/customers/broadcasts
-// @access  Private
-exports.getCustomerBroadcasts = asyncHandler(async (req, res, next) => {
-  const broadcasts = await CustomerService.getCustomerBroadcasts(req.user.id);
-  res.status(200).json({
-    success: true,
-    data: broadcasts
-  });
-});
-
-// @desc    Get broadcast details
-// @route   GET /api/customers/broadcasts/:id
-// @access  Private
-exports.getBroadcastDetails = asyncHandler(async (req, res, next) => {
-  const broadcast = await CustomerService.getBroadcastDetails(
-    req.user.id,
-    req.params.id
-  );
-  res.status(200).json({
-    success: true,
-    data: broadcast
-  });
-});
-
-// @desc    Cancel broadcast
-// @route   PATCH /api/customers/broadcasts/:id/cancel
-// @access  Private
-exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
-  const broadcast = await CustomerService.cancelBroadcast(
-    req.user.id,
-    req.params.id
-  );
-  res.status(200).json({
-    success: true,
-    data: broadcast
-  });
-});
-
 exports.createBroadcast = asyncHandler(async (req, res, next) => {
   const { products, coordinates, paymentMethod, deliveryAddress } = req.body;
 
@@ -490,6 +326,45 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
   }
 
   res.status(201).json({
+    success: true,
+    data: broadcast
+  });
+});
+
+// @desc    Get customer's active broadcasts
+// @route   GET /api/customers/broadcasts
+// @access  Private
+exports.getCustomerBroadcasts = asyncHandler(async (req, res, next) => {
+  const broadcasts = await CustomerService.getCustomerBroadcasts(req.user.id);
+  res.status(200).json({
+    success: true,
+    data: broadcasts
+  });
+});
+
+// @desc    Get broadcast details
+// @route   GET /api/customers/broadcasts/:id
+// @access  Private
+exports.getBroadcastDetails = asyncHandler(async (req, res, next) => {
+  const broadcast = await CustomerService.getBroadcastDetails(
+    req.user.id,
+    req.params.id
+  );
+  res.status(200).json({
+    success: true,
+    data: broadcast
+  });
+});
+
+// @desc    Cancel broadcast
+// @route   PATCH /api/customers/broadcasts/:id/cancel
+// @access  Private
+exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
+  const broadcast = await CustomerService.cancelBroadcast(
+    req.user.id,
+    req.params.id
+  );
+  res.status(200).json({
     success: true,
     data: broadcast
   });

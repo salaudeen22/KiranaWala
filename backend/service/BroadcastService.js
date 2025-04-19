@@ -103,32 +103,35 @@ class BroadcastService {
   }
 
   static async findEligibleRetailers(coordinates, pincode) {
-    console.log("Finding eligible retailers...");
-    console.log("Coordinates:", coordinates);
-    console.log("Pincode:", pincode);
-
     try {
-      const retailers = await Retailer.find({
-        location: {
-          $near: {
-            $geometry: {
-              type: "Point",
-              coordinates: coordinates
-            },
-            $maxDistance: 5000 // Adjust the distance as needed (in meters)
-          }
+      // Validate coordinates format
+      if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+        throw new Error("Invalid coordinates format [longitude, latitude]");
+      }
+  
+      // Find retailers within 5km radius and matching the pincode
+      const retailer= await Retailer.aggregate([
+        {
+          $match: {
+            isActive: true,
+            "serviceAreas.pincode": pincode, // Match pincode
+          },
         },
-        serviceablePincodes: pincode // Ensure this field exists in the Retailer schema
-      });
-
-      console.log("Eligible Retailers:", retailers);
-      return retailers;
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+          },
+        },
+      ]);
+      // console.log("Broadcast",retailer);
+      return retailer;
+   
     } catch (error) {
       console.error("Error finding eligible retailers:", error);
-      return [];
+      throw error;
     }
   }
-
   static async getBroadcastDetails(broadcastId) {
     if (!mongoose.Types.ObjectId.isValid(broadcastId)) {
       throw new AppError("Invalid Broadcast ID", 400);

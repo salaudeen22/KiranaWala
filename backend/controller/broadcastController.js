@@ -115,18 +115,29 @@ exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
     return next(new AppError("Broadcast no longer available", 400));
   }
 
+  // Fetch retailer details
+  const retailer = await Retailer.findById(req.user.retailerId).select("name location");
+  if (!retailer) {
+    return next(new AppError("Retailer not found", 404));
+  }
+
   // Notify the customer
   const io = req.app.get("io");
-  io.to(`customer_${broadcast.customerId}`).emit(
-    "broadcast_accepted",
-    broadcast
-  );
+  io.to(`customer_${broadcast.customerId}`).emit("broadcast_accepted", {
+    broadcastId: broadcast._id,
+    retailer: {
+      id: retailer._id,
+      name: retailer.name,
+      address: retailer.location?.address || "Address not available",
+    },
+  });
 
   res.status(200).json({
     success: true,
     data: broadcast,
   });
 });
+
 // @desc    Get customer's broadcasts
 // @route   GET /api/broadcasts
 // @access  Private (Customer)

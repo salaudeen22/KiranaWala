@@ -75,6 +75,18 @@ const Broadcasts = () => {
         broadcastId,
         "accepted"
       );
+
+      // Notify the customer
+      const socket = io("http://localhost:6565");
+      socket.emit("broadcast_accepted", {
+        broadcastId: updatedBroadcast._id,
+        retailer: {
+          id: localStorage.getItem("Id"),
+          name: "Retailer Name", // Replace with actual retailer name if available
+          address: "Retailer Address", // Replace with actual retailer address if available
+        },
+      });
+
       setSelectedBroadcast(updatedBroadcast);
     } catch (error) {
       console.error("Error accepting broadcast:", error);
@@ -244,9 +256,9 @@ const Broadcasts = () => {
                       No new notifications
                     </div>
                   ) : (
-                    notifications.map((notification) => (
+                    notifications.map((notification, index) => (
                       <div
-                        key={notification.id}
+                        key={notification.id || index} // Ensure a unique key for each notification
                         className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
                           !notification.read ? "bg-blue-50" : ""
                         }`}

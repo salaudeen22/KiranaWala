@@ -4,6 +4,7 @@ import { FiShoppingCart, FiTrash2, FiMinus, FiPlus } from 'react-icons/fi';
 import { useCart, useDispatchCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { io } from "socket.io-client";
 
 function CartPage() {
   const cart = useCart();
@@ -29,6 +30,27 @@ function CartPage() {
     if (user) {
       fetchAddresses();
     }
+  }, [user]);
+
+  useEffect(() => {
+    const socket = io("http://localhost:6565", {
+      transports: ["websocket", "polling"], // Ensure proper transport methods
+    });
+
+    if (user) {
+      socket.emit("join_customer", user.id); // Join the customer room
+
+      socket.on("broadcast_accepted", (data) => {
+        console.log("Notification received:", data); // Debugging log
+        alert(
+          `Your order has been accepted by retailer ${data.retailer.name}. Address: ${data.retailer.address}`
+        );
+      });
+    }
+
+    return () => {
+      socket.disconnect(); // Clean up the socket connection
+    };
   }, [user]);
 
   const fetchAddresses = async () => {

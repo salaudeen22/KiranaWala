@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FiRefreshCw,
   FiBell,
@@ -9,7 +9,11 @@ import {
 } from "react-icons/fi";
 import { io } from "socket.io-client";
 
+
+
+
 const Broadcasts = () => {
+  const audioRef = useRef(null);
   const [broadcasts, setBroadcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,51 +75,54 @@ const Broadcasts = () => {
   // Handle accepting a broadcast
   const handleAcceptBroadcast = async (broadcastId) => {
     try {
-      const updatedBroadcast = await updateBroadcastStatus(
-        broadcastId,
-        "accepted"
+      const response = await fetch(
+        `http://localhost:6565/api/broadcasts/${broadcastId}/accept`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ status: "accepted" }), 
+        }
       );
-
-      // Notify the customer
-      const socket = io("http://localhost:6565");
-      socket.emit("broadcast_accepted", {
-        broadcastId: updatedBroadcast._id,
-        retailer: {
-          id: localStorage.getItem("Id"),
-          name: "Retailer Name", // Replace with actual retailer name if available
-          address: "Retailer Address", // Replace with actual retailer address if available
-        },
-      });
-
-      setSelectedBroadcast(updatedBroadcast);
+  
+      if (!response.ok) throw new Error("Failed to accept broadcast");
+  
+      const data = await response.json();
+      fetchBroadcasts();
+      setSelectedBroadcast(data.data); 
     } catch (error) {
+      alert(error.message);
       console.error("Error accepting broadcast:", error);
     }
   };
+  
 
   // Initialize Socket.IO and fetch initial data
 
   useEffect(() => {
     const socket = io("http://localhost:6565");
-    // console.log(socket);
+    console.log("Connecting to WebSocket server...");
 
     const retailerId = localStorage.getItem("Id");
 
     if (retailerId) {
       socket.emit("join_retailer", retailerId);
-      console.log(`Retailer ${retailerId} joined`);
+      console.log(`Retailer joined room: retailer_${retailerId}`);
     }
 
     socket.on("new_order", (newOrder) => {
+      console.log("New order received:", newOrder);
+
       setNotifications((prev) => [
         {
           id: Date.now(),
           message: `New order in ${newOrder.deliveryAddress.city}`,
           broadcast: {
-            _id: newOrder.broadcastId, // Use broadcastId as _id for matching
+            _id: newOrder.broadcastId,
             deliveryAddress: newOrder.deliveryAddress,
             createdAt: newOrder.createdAt,
-            // Include other necessary fields if available
           },
           read: false,
           type: "new_order",
@@ -123,20 +130,16 @@ const Broadcasts = () => {
         ...prev,
       ]);
 
-      for (let i = 0; i < 5; i++) {
-        const audio = new Audio(
-          "../../assessts/mixkit-software-interface-remove-2576.wav"
-        );
-        audio.play().catch((e) => console.log("Audio play failed:", e));
-      }
+      const audio = new Audio(
+        "../../assessts/mixkit-software-interface-remove-2576.wav"
+      );
+      audio.play().catch((e) => console.log("Audio play failed:", e));
 
       fetchBroadcasts();
     });
 
-    // Fetch initial data
-    fetchBroadcasts();
-
     return () => {
+      console.log("Cleaning up WebSocket connection...");
       socket.disconnect();
     };
   }, []);
@@ -258,7 +261,7 @@ const Broadcasts = () => {
                   ) : (
                     notifications.map((notification, index) => (
                       <div
-                        key={notification.id || index} // Ensure a unique key for each notification
+                        key={notification.id || index} // Ensure unique key
                         className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
                           !notification.read ? "bg-blue-50" : ""
                         }`}

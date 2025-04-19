@@ -29,35 +29,38 @@ const io = new Server(server, {
   origin: "http://localhost:5173/",
 });
 
-// Make io accessible in routes
+// ✅ Make io accessible throughout the app using app.get('io')
+app.set("io", io);
+
+// Also make io available in routes via req.io
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
 // Socket.IO connection handling
-// index.js (server)
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  socket.onAny((event, ...args) => {
-    console.log(`Received event: ${event}`, args);
+  socket.on('join_customer', (customerId) => {
+    socket.join(`customer_${customerId}`);
+    console.log(`Customer ${customerId} joined room customer_${customerId}`);
   });
 
   socket.on('join_retailer', (retailerId) => {
     socket.join(`retailer_${retailerId}`);
-    console.log(`Retailer ${retailerId} connected`);
+    console.log(`Retailer ${retailerId} joined room retailer_${retailerId}`);
   });
 
-  socket.on('join_customer', (customerId) => {
-    socket.join(`customer_${customerId}`);
-    console.log(`Customer ${customerId} connected`);
+  socket.onAny((event, ...args) => {
+    console.log(`Received event ${event} from ${socket.id}`);
   });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
 });
+
 // Import routes
 app.use("/api/employees", require("./router/retailerRoute/employeeRoutes"));
 app.use("/api/owners", require("./router/retailerRoute/ownerRoutes"));
@@ -80,6 +83,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error" });
 });
 
+// Start server
 server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

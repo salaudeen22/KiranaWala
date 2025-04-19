@@ -35,6 +35,8 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
       deliveryAddress,
     });
 
+    console.log(`Broadcast created with ID: ${broadcast._id} for customer: ${req.user.id}`);
+
     // Populate product names
     const populatedBroadcast = await Broadcast.findById(broadcast._id)
       .populate({
@@ -60,6 +62,7 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
 
       // Notify each retailer in real-time
       retailers.forEach((retailer) => {
+        console.log(`Notifying retailer_${retailer._id} about broadcast_${broadcast._id}`);
         req.io.to(`retailer_${retailer._id}`).emit("new_order", {
           broadcastId: broadcast._id,
           customer: broadcast.customerId,
@@ -91,53 +94,80 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
 
 exports.acceptBroadcast = asyncHandler(async (req, res, next) => {
   const broadcastId = req.params.id;
+  const retailerId = req.user.retailerId;
+
+  console.log(`Retailer ${retailerId} is accepting broadcast ${broadcastId}`);
 
   // Validate broadcastId
   if (!mongoose.Types.ObjectId.isValid(broadcastId)) {
+    console.error("Invalid Broadcast ID");
     return next(new AppError("Invalid Broadcast ID", 400));
   }
 
+  // Find and update the broadcast
   const broadcast = await Broadcast.findOneAndUpdate(
     {
       _id: broadcastId,
       status: "pending",
-      expiryTime: { $gt: new Date() },
+      expiryTime: { $gt: new Date() }
     },
     {
       status: "accepted",
-      retailerId: req.user.retailerId,
-      acceptedAt: new Date(),
+      retailerId: retailerId,
+      acceptedAt: new Date()
     },
     { new: true }
   );
 
   if (!broadcast) {
+    console.error("Broadcast no longer available or expired");
     return next(new AppError("Broadcast no longer available", 400));
   }
 
+  console.log("Broadcast accepted:", broadcast);
+
   // Fetch retailer details
-  const retailer = await Retailer.findById(req.user.retailerId).select("name location");
+  const retailer = await Retailer.findById(retailerId).select("name location");
   if (!retailer) {
+    console.error("Retailer not found");
     return next(new AppError("Retailer not found", 404));
   }
 
-  // Notify the customer
-  const io = req.app.get("io");
-  io.to(`customer_${broadcast.customerId}`).emit("broadcast_accepted", {
-    broadcastId: broadcast._id,
-    retailer: {
-      id: retailer._id,
-      name: retailer.name,
-      address: retailer.location?.address || "Address not available",
-    },
-  });
+  console.log("Retailer details:", retailer);
 
-  res.status(200).json({
-    success: true,
-    data: broadcast,
-  });
+  try {
+    // Get the io instance from the app
+    const io = req.app.get('io');
+    
+    // Emit notification to the customer's room
+    io.to(`customer_${broadcast.customerId}`).emit("broadcast_accepted", {
+      broadcastId: broadcast._id,
+      retailer: {
+        id: retailer._id,
+        name: retailer.name,
+        address: retailer.location?.address || "Address not available"
+      },
+      orderDetails: {
+        totalAmount: broadcast.totalAmount,
+        items: broadcast.products.map(p => ({
+          name: p.productId.name,
+          quantity: p.quantity,
+          price: p.priceAtPurchase
+        }))
+      }
+    });
+
+    console.log(`Notified customer_${broadcast.customerId} about accepted broadcast_${broadcast._id}`);
+
+    res.status(200).json({
+      success: true,
+      data: broadcast
+    });
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    return next(new AppError("Failed to send notification", 500));
+  }
 });
-
 // @desc    Get customer's broadcasts
 // @route   GET /api/broadcasts
 // @access  Private (Customer)
@@ -165,7 +195,7 @@ exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get broadcast details
+//x @desc    Get broadcast details
 // @route   GET /api/broadcasts/:id
 // @access  Private (Customer/Retailer)
 exports.getBroadcastDetails = asyncHandler(async (req, res, next) => {

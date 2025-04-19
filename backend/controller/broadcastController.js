@@ -35,6 +35,14 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
       deliveryAddress,
     });
 
+    // Populate product names
+    const populatedBroadcast = await Broadcast.findById(broadcast._id)
+      .populate({
+        path: "products.productId",
+        select: "name",
+      })
+      .lean();
+
     // Find and notify eligible retailers
     const io = req.app.get("io");
     try {
@@ -50,7 +58,6 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
         potentialRetailers: retailers.map((r) => r._id),
       });
 
-      // Notify each retailer in real-time
       // Notify each retailer in real-time
       retailers.forEach((retailer) => {
         req.io.to(`retailer_${retailer._id}`).emit("new_order", {
@@ -70,7 +77,7 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      data: broadcast,
+      data: populatedBroadcast,
     });
   } catch (error) {
     console.error("Error creating broadcast:", error);
@@ -228,7 +235,7 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
   console.log("Mapping the pincode", pincodes.length);
 
   const broadcasts = await Broadcast.find({
-    status: { $in:['pending', 'accepted', 'rejected', 'completed', 'cancelled'], },
+    status: { $in: ['pending', 'accepted', 'rejected', 'completed', 'cancelled'] },
     "deliveryAddress.pincode": { $in: pincodes },
     // location: {
     //   $nearSphere: {
@@ -239,7 +246,12 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
     //     $maxDistance: 5000, // 5km
     //   },
     // },
-  }).sort("-createdAt");
+  })
+    .populate({
+      path: "products.productId",
+      select: "name",
+    })
+    .sort("-createdAt");
 
   console.log("Broadcasting to db", broadcasts.length);
 

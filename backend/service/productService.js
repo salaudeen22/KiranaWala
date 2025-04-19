@@ -147,6 +147,15 @@ class ProductService {
     if (!product) throw new AppError('Product not found', 404);
     return product;
   }
+
+  static async bulkCreateProducts(products) {
+    try {
+      return await Product.insertMany(products, { ordered: true });
+    } catch (error) {
+      console.error("Error during bulk product creation:", error);
+      throw new AppError("Failed to create products", 500);
+    }
+  }
 }
 
 module.exports = ProductService;

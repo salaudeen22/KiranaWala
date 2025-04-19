@@ -44,4 +44,9 @@ router.patch('/:id/stock',
   productController.updateStock
 );
 
+router.post('/bulk-upload', 
+  authMiddleware.authorize('admin', 'manager'), 
+  productController.bulkUploadProducts
+);
+
 module.exports = router;

@@ -120,3 +120,37 @@ exports.getProductByBarcode = asyncHandler(async (req, res) => {
   );
   res.status(200).json({ success: true, data: product });
 });
+
+exports.bulkUploadProducts = asyncHandler(async (req, res, next) => {
+  const { products } = req.body;
+
+  if (!Array.isArray(products) || products.length === 0) {
+    return next(new AppError("Products must be a non-empty array", 400));
+  }
+
+  const retailerId = req.user.retailerId;
+
+  // Add retailerId to each product and validate required fields
+  const productsWithRetailer = products.map((product) => {
+    // Format expiryDate to ISO 8601 if it exists
+    if (product.expiryDate) {
+      const formattedDate = new Date(product.expiryDate);
+      if (isNaN(formattedDate)) {
+        throw new AppError(`Invalid expiryDate format: ${product.expiryDate}`, 400);
+      }
+      product.expiryDate = formattedDate.toISOString();
+    }
+    return { ...product, retailerId };
+  });
+
+  try {
+    const createdProducts = await ProductService.bulkCreateProducts(productsWithRetailer);
+    res.status(201).json({
+      success: true,
+      data: createdProducts,
+    });
+  } catch (error) {
+    console.error("Error during bulk product upload:", error);
+    return next(new AppError("Failed to upload products", 500));
+  }
+});

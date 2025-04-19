@@ -114,7 +114,7 @@ class BroadcastService {
         {
           $match: {
             isActive: true,
-            "serviceAreas.pincode": pincode, // Match pincode
+            "serviceAreas.pincode": pincode, 
           },
         },
         {

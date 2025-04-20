@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FiShoppingCart, FiTrash2, FiMinus, FiPlus, FiBell, FiX, FiCheck } from "react-icons/fi";
+import {
+  FiShoppingCart,
+  FiTrash2,
+  FiMinus,
+  FiPlus,
+  FiBell,
+  FiX,
+  FiCheck,
+} from "react-icons/fi";
 import { useCart, useDispatchCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
@@ -54,73 +62,115 @@ function CartPage() {
     }
   }, [user]);
 
+  // Replace your existing socket handlers with this improved version
   useEffect(() => {
     let socket;
-    
+
     const initializeSocket = () => {
       if (user && user._id) {
         console.log("Initializing socket connection...");
         socket = io("http://localhost:6565", {
           auth: {
-            token: localStorage.getItem("authToken")
+            token: localStorage.getItem("authToken"),
           },
           transports: ["websocket"],
           reconnection: true,
-          reconnectionAttempts: Infinity
+          reconnectionAttempts: Infinity,
         });
-  
+
         socket.on("connect", () => {
           console.log("Connected to socket server with ID:", socket.id);
           socket.emit("join_customer", user._id);
         });
+
         socket.onAny((event, ...args) => {
           console.log(`Received event ${event} from ${socket.id}`);
         });
-  
+
+        // Handle order acceptance
         socket.on("broadcast_accepted", (data) => {
           console.log("Broadcast accepted notification:", data);
           if (data && data.retailer) {
             const message = `Your order has been accepted by ${data.retailer.name}`;
-            setNotifications(prev => [
-              { id: Date.now(), message, read: false },
-              ...prev
+            setNotifications((prev) => [
+              {
+                id: `accept-${Date.now()}`,
+                message,
+                read: false,
+                timestamp: new Date().toISOString(),
+              },
+              ...prev,
             ]);
-            
-            try {
-            
-              if (audioRef.current) {
-                audioRef.current.play().catch(e => console.log("Audio play error:", e));
-              }
-            } catch (e) {
-              console.log("Audio error:", e);
-            }
+            playNotificationSound();
           }
         });
-  
+
+        // Handle status updates
+        socket.on("broadcast_status_updated", (data) => {
+          console.log("Status update notification:", data);
+          if (data && data.newStatus && data.retailer) {
+            const statusMessages = {
+              preparing: "is preparing your order",
+              ready: "has your order ready",
+              in_transit: "is delivering your order",
+              delivered: "has delivered your order",
+              cancelled: "has cancelled your order",
+            };
+
+            const message = `Order status: ${data.retailer.name} ${
+              statusMessages[data.newStatus] ||
+              `status changed to ${data.newStatus}`
+            }`;
+
+            setNotifications((prev) => [
+              {
+                id: `status-${Date.now()}`,
+                message,
+                read: false,
+                timestamp: new Date().toISOString(),
+              },
+              ...prev,
+            ]);
+            playNotificationSound();
+          }
+        });
+
         socket.on("disconnect", (reason) => {
           console.log("Disconnected:", reason);
           if (reason === "io server disconnect") {
             socket.connect();
           }
         });
-  
+
         socket.on("connect_error", (error) => {
           console.error("Connection error:", error);
           setTimeout(() => socket.connect(), 1000);
         });
       }
     };
-  
+
+    const playNotificationSound = () => {
+      try {
+        if (audioRef.current) {
+          const audio = new Audio(notificationSound);
+          audio.play().catch((e) => console.log("Audio play error:", e));
+        }
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    };
+
     initializeSocket();
-  
+
     return () => {
       if (socket) {
         console.log("Cleaning up socket connection");
         socket.off("broadcast_accepted");
+        socket.off("broadcast_status_updated");
         socket.disconnect();
       }
     };
-  }, [user]); 
+  }, [user]);
 
   const fetchAddresses = async () => {
     try {
@@ -240,6 +290,7 @@ function CartPage() {
               </span>
             )}
           </button>
+          // In your notification dropdown JSX:
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-10">
               <div className="p-2 border-b flex justify-between items-center">
@@ -273,8 +324,18 @@ function CartPage() {
                       className={`p-3 border-b hover:bg-gray-50 ${
                         !notification.read ? "bg-blue-50" : ""
                       }`}
+                      onClick={() => {
+                        setNotifications((prev) =>
+                          prev.map((n) =>
+                            n.id === notification.id ? { ...n, read: true } : n
+                          )
+                        );
+                      }}
                     >
                       <p className="text-sm">{notification.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(notification.timestamp).toLocaleTimeString()}
+                      </p>
                     </div>
                   ))
                 )}

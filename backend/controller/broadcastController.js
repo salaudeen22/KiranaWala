@@ -208,15 +208,19 @@ exports.getBroadcastDetails = asyncHandler(async (req, res, next) => {
 });
 
 exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
+  const broadcastId = req.params.id;
   const { status } = req.body;
+  const retailerId = req.user.retailerId;
 
-  // Validate required fields
-  if (!status) {
-    return next(new AppError("Status is required", 400));
+  console.log(`Retailer ${retailerId} is updating broadcast ${broadcastId} to status: ${status}`);
+
+  // Validate broadcastId
+  if (!mongoose.Types.ObjectId.isValid(broadcastId)) {
+    console.error("Invalid Broadcast ID");
+    return next(new AppError("Invalid Broadcast ID", 400));
   }
 
-  // Update the list of valid statuses
+  // Validate status
   const validStatuses = [
     "pending",
     "ready",
@@ -227,26 +231,66 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
     "delivered",
     "cancelled",
   ];
-  if (!validStatuses.includes(status)) {
+  if (!status || !validStatuses.includes(status)) {
+    console.error(`Invalid status: ${status}`);
     return next(new AppError(`Invalid status: ${status}`, 400));
   }
 
-  // Update the broadcast status
-  const broadcast = await Broadcast.findByIdAndUpdate(
-    id,
-    { status },
+  // Update the broadcast
+  const broadcast = await Broadcast.findOneAndUpdate(
+    {
+      _id: broadcastId,
+      expiryTime: { $gt: new Date() }
+    },
+    {
+      status,
+      retailerId,
+      acceptedAt: status === "accepted" ? new Date() : undefined
+    },
     { new: true }
   );
 
   if (!broadcast) {
-    return next(new AppError("Broadcast not found", 404));
+    console.error("Broadcast no longer available or expired");
+    return next(new AppError("Broadcast no longer available", 400));
   }
 
-  res.status(200).json({
-    success: true,
-    data: broadcast,
-  });
+  console.log("Broadcast updated:", broadcast);
+
+  // Fetch retailer details
+  const retailer = await Retailer.findById(retailerId).select("name location");
+  if (!retailer) {
+    console.error("Retailer not found");
+    return next(new AppError("Retailer not found", 404));
+  }
+
+  console.log("Retailer details:", retailer);
+
+  try {
+    const io = req.app.get('io');
+
+    io.to(`customer_${broadcast.customerId}`).emit("broadcast_status_updated", {
+      broadcastId: broadcast._id,
+      newStatus: status,
+      retailer: {
+        id: retailer._id,
+        name: retailer.name,
+        address: retailer.location?.address || "Address not available"
+      }
+    });
+
+    console.log(`Notified customer_${broadcast.customerId} about status update to ${status}`);
+
+    res.status(200).json({
+      success: true,
+      data: broadcast
+    });
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    return next(new AppError("Failed to send notification", 500));
+  }
 });
+
 exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
   // console.log(
   //   "Fetching available broadcasts for retailer:",

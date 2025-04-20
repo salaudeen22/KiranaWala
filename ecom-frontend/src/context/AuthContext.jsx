@@ -33,7 +33,8 @@ export const AuthProvider = ({ children }) => {
           const data = await response.json();
           if (response.ok) {
             setUser(data.data);
-            localStorage.setItem('user', JSON.stringify(data.data)); // Persist user data
+           
+            localStorage.setItem('user', JSON.stringify(data.data)); 
           } else {
             setUser(null);
             localStorage.removeItem('user');

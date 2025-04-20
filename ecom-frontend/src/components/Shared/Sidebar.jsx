@@ -14,12 +14,9 @@ function Sidebar() {
   const navItems = [
     { path: "/", icon: FiHome, label: "Home" },
     { path: "/Allproduct", icon: FiShoppingBag, label: "Products" },
-    { path: "/deals", icon: FiTag, label: "Hot Deals", badge: "New" },
-    { path: "/quick-delivery", icon: FiClock, label: "Quick Delivery" },
+
     { path: "/wishlist", icon: FiHeart, label: "Wishlist" },
     { path: "/my-orders", icon: FiTruck, label: "My Orders" }, 
-
-    { path: "/settings", icon: FiSettings, label: "Settings" },
     { path: "/profile", icon: FiUsers, label: "My Profile" },
     { path: "/help", icon: FiHelpCircle, label: "Help Center" },
   ];

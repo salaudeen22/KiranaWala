@@ -14,6 +14,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
+import HelpCenter from "./pages/HelpCenter";
 
 function App() {
   return (
@@ -35,7 +36,9 @@ function App() {
               <Route path="products/:id" element={<ProductDetailPage />} />
               <Route path="cart" element={<CartPage />} />
               <Route path="wishlist" element={<Wishlist />} />
-              <Route path="my-orders" element={<MyOrder />} /> {/* Add MyOrder route */}
+              <Route path="my-orders" element={<MyOrder />} /> 
+              <Route path="help" element={<HelpCenter />} />
+
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

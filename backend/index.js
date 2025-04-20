@@ -32,6 +32,7 @@ const io = new Server(server, {
 
 app.set("io", io);
 
+
 // Also make io available in routes via req.io
 app.use((req, res, next) => {
   req.io = io;
@@ -61,6 +62,8 @@ io.on('connection', (socket) => {
   });
 });
 
+
+app.use("/api/e",require("./router/eProductRoute"));
 // Import routes
 app.use("/api/employees", require("./router/retailerRoute/employeeRoutes"));
 app.use("/api/owners", require("./router/retailerRoute/ownerRoutes"));

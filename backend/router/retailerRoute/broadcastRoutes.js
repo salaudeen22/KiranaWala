@@ -23,6 +23,8 @@ router.get('/:id',
   customerProtect, 
   broadcastController.getBroadcastDetails
 );
+router.get("/status/latest", customerProtect, broadcastController.getLatestBroadcastStatus);
+
 
 router.patch('/:id/cancel', 
   customerProtect, 

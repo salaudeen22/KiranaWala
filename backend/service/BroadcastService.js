@@ -102,19 +102,36 @@ class BroadcastService {
     );
   }
 
+  static async getLatestStatus(customerId) {
+    if (!customerId) {
+      throw new AppError("Customer ID is required", 400);
+    }
+  
+    const latestBroadcast = await Broadcast.findOne({ customerId })
+      .sort({ createdAt: -1 })
+      .select("status");
+  
+    if (!latestBroadcast) {
+      throw new AppError("No broadcast found for this customer", 404);
+    }
+  
+    return latestBroadcast.status;
+  }
+  
+
   static async findEligibleRetailers(coordinates, pincode) {
     try {
       // Validate coordinates format
       if (!Array.isArray(coordinates) || coordinates.length !== 2) {
         throw new Error("Invalid coordinates format [longitude, latitude]");
       }
-  
+
       // Find retailers within 5km radius and matching the pincode
-      const retailer= await Retailer.aggregate([
+      const retailer = await Retailer.aggregate([
         {
           $match: {
             isActive: true,
-            "serviceAreas.pincode": pincode, 
+            "serviceAreas.pincode": pincode,
           },
         },
         {
@@ -126,7 +143,6 @@ class BroadcastService {
       ]);
       // console.log("Broadcast",retailer);
       return retailer;
-   
     } catch (error) {
       console.error("Error finding eligible retailers:", error);
       throw error;

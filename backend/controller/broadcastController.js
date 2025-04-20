@@ -206,7 +206,19 @@ exports.getBroadcastDetails = asyncHandler(async (req, res, next) => {
     data: broadcast,
   });
 });
+exports.getLatestBroadcastStatus = async (req, res, next) => {
+  try {
+    console.log("Fetching latest broadcast status...");
+    // console.log("Customer ID:", req.user);
+    const customerId = req.user.id || req.params.customerId; // assuming auth
 
+    const status = await BroadcastService.getLatestStatus(customerId);
+
+    res.status(200).json({ success: true, status });
+  } catch (err) {
+    next(err);
+  }
+};
 exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   const broadcastId = req.params.id;
   const { status } = req.body;

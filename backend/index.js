@@ -26,7 +26,7 @@ const io = new Server(server, {
     origin: "*",
     methods: ["GET", "POST"],
   },
-  origin: "http://localhost:5173/",
+  origin: ["http://localhost:5173/", "http://localhost:5174/"]
 });
 
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FiSearch, FiClock, FiTruck, FiPackage, FiRefreshCw, 
   FiStar, FiMapPin, FiShoppingBag, FiChevronRight 
@@ -9,6 +9,55 @@ import "slick-carousel/slick/slick-theme.css";
 
 const LandingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [orderStatus, setOrderStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch order status on component mount
+  useEffect(() => {
+    const fetchOrderStatus = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        console.log('Token:', token);
+        const response = await fetch('http://localhost:6565/api/broadcasts/status/latest', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          setOrderStatus(data.status);
+        } else {
+          setOrderStatus(null);
+        }
+      } catch (error) {
+        console.error('Error fetching order status:', error);
+        setOrderStatus(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderStatus();
+  }, []);
+
+
+  const getProgress = (status) => {
+    switch (status) {
+      case 'pending':
+        return { width: '25%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
+      case 'accepted':
+        return { width: '50%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
+      case 'out_for_delivery':
+        return { width: '75%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
+      case 'delivered':
+        return { width: '100%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
+      default:
+        return { width: '0%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
+    }
+  };
+
+  const progress = orderStatus ? getProgress(orderStatus) : null;
 
   const categories = [
     { id: 1, name: 'Groceries', icon: <FiShoppingBag /> },
@@ -299,30 +348,37 @@ const LandingPage = () => {
       </div>
 
       {/* 🚚 Track Live Orders */}
-      <div className="px-4 py-6 bg-white">
-        <h2 className="text-xl font-bold mb-4">Track Live Orders</h2>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-3">
-              <FiTruck className="text-green-600 text-xl" />
+      {!loading && orderStatus && (
+        <div className="px-4 py-6 bg-white">
+          <h2 className="text-xl font-bold mb-4">Track Live Orders</h2>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <FiTruck className="text-green-600 text-xl" />
+              </div>
+              <div>
+                <h3 className="font-medium">Your Order</h3>
+                <p className="text-sm text-gray-500 capitalize">
+                  {orderStatus.replace(/_/g, ' ')}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-medium">Order #12345</h3>
-              <p className="text-sm text-gray-500">Out for delivery</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Order placed</span>
-              <span>On the way</span>
-              <span>Delivered</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div className="bg-green-600 h-1.5 rounded-full w-2/3"></div>
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                {progress.steps.map((step, index) => (
+                  <span key={index}>{step}</span>
+                ))}
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div 
+                  className="bg-green-600 h-1.5 rounded-full transition-all duration-300" 
+                  style={{ width: progress.width }}
+                ></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

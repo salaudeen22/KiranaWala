@@ -41,6 +41,7 @@ const UserManagement = () => {
       setNewEmployee(prev => ({ ...prev, retailerId: storedRetailerId }));
       fetchEmployeeData(token, storedRetailerId);
     }
+    fetchEmployeeData(token, storedRetailerId);
   }, []);
 
   const fetchEmployeeData = async () => {

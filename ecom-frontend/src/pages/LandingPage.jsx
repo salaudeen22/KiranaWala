@@ -31,19 +31,19 @@ const LandingPage = () => {
       id: 1,
       title: 'Summer Sale',
       subtitle: 'Up to 50% off',
-      image: 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=800&q=60'
+      image: 'https://static.vecteezy.com/system/resources/thumbnails/022/800/826/small_2x/summer-sale-podium-display-pile-of-sand-flowers-beach-umbrella-beach-chair-and-beach-ball-speech-bubble-space-banner-design-on-yellow-background-eps-10-illustration-vector.jpg'
     },
     {
       id: 2,
       title: 'New Arrivals',
       subtitle: 'Fresh products daily',
-      image: 'https://images.unsplash.com/photo-1586281380381-934b17f53cda?auto=format&fit=crop&w=800&q=60'
+      image: 'https://img.freepik.com/free-vector/world-vegan-day-sale-banner-template_23-2149741503.jpg?semt=ais_hybrid&w=740'
     },
     {
       id: 3,
       title: 'Member Discount',
       subtitle: 'Extra 10% for members',
-      image: 'https://images.unsplash.com/photo-1606813903174-f73d0df4b3a3?auto=format&fit=crop&w=800&q=60'
+      image: 'https://yithemes.com/wp-content/uploads/2016/08/club-sale.jpghttps://yithemes.com/wp-content/uploads/2016/08/club-sale.jpg'
     }
   ];
   
@@ -64,7 +64,7 @@ const LandingPage = () => {
       price: 59.99,
       originalPrice: 79.99,
       discount: 25,
-      image: 'https://images.unsplash.com/photo-1585386959984-a4155224c78c?auto=format&fit=crop&w=100&q=60'
+      image: 'https://www.soundscape.store/cdn/shop/files/cq5dam.web.600.600_13_980x.progressive.jpg?v=1704455840'
     },
     {
       id: 3,
@@ -72,7 +72,7 @@ const LandingPage = () => {
       price: 19.99,
       originalPrice: 29.99,
       discount: 34,
-      image: 'https://images.unsplash.com/photo-1600195077078-3ec9c66dfd47?auto=format&fit=crop&w=100&q=60'
+      image: 'https://wiselife.in/cdn/shop/files/1_c32957ca-8b92-4e21-b32d-395717efbd7d.jpg?v=1708681826'
     },
     {
       id: 4,
@@ -80,7 +80,7 @@ const LandingPage = () => {
       price: 8.99,
       originalPrice: 12.99,
       discount: 31,
-      image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=100&q=60'
+      image: 'https://m.media-amazon.com/images/I/518nS4BK4zL._AC_UF1000,1000_QL80_.jpg'
     }
   ];
   
@@ -90,13 +90,13 @@ const LandingPage = () => {
       id: 1,
       name: 'Milk & Bread',
       date: '2 days ago',
-      image: 'https://images.unsplash.com/photo-1587910017075-b317fdd238cf?auto=format&fit=crop&w=80&q=60'
+      image: 'https://www.bigbasket.com/media/uploads/p/xxl/20000005_7-britannia-milk-bread.jpg'
     },
     {
       id: 2,
       name: 'Phone Case',
       date: '1 week ago',
-      image: 'https://images.unsplash.com/photo-1585386959984-a4155224c78c?auto=format&fit=crop&w=80&q=60'
+      image: 'https://s.alicdn.com/@sc04/kf/H8519b38d7bb140449670acf13ef98611R.png_720x720q50.png'
     }
   ];
   
@@ -106,21 +106,21 @@ const LandingPage = () => {
       name: 'Protein Powder',
       price: 24.99,
       rating: 4.5,
-      image: 'https://images.unsplash.com/photo-1600180758890-6fc71d16943d?auto=format&fit=crop&w=120&q=60'
+      image: 'https://www.protrition.in/cdn/shop/files/Whey-Protein-Vanilla-1KG.png?v=1737096788'
     },
     {
       id: 2,
       name: 'Bluetooth Speaker',
       price: 45.99,
       rating: 4.2,
-      image: 'https://images.unsplash.com/photo-1606813903174-f73d0df4b3a3?auto=format&fit=crop&w=120&q=60'
+      image: 'https://pyxis.nymag.com/v1/imgs/b7e/35e/d2257113659f8ec67dccfadac2a4c0c001.rsquare.w600.jpg'
     },
     {
       id: 3,
       name: 'Organic Tea',
       price: 5.99,
       rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1612024771450-8b1e2a426f50?auto=format&fit=crop&w=120&q=60'
+      image: 'https://marveltea.com/cdn/shop/files/OrganicGreenTea-min.webp?v=1724847412'
     }
   ];
   
@@ -227,8 +227,8 @@ const LandingPage = () => {
                 />
                 <h3 className="font-medium text-sm line-clamp-2 mb-1">{deal.name}</h3>
                 <div className="flex items-end">
-                  <span className="font-bold text-green-600">${deal.price}</span>
-                  <span className="text-xs text-gray-500 line-through ml-2">${deal.originalPrice}</span>
+                  <span className="font-bold text-green-600">{deal.price}</span>
+                  <span className="text-xs text-gray-500 line-through ml-2">{deal.originalPrice}</span>
                   <span className="ml-auto text-xs bg-red-100 text-red-600 px-1 rounded">{deal.discount}% OFF</span>
                 </div>
               </div>
@@ -273,7 +273,7 @@ const LandingPage = () => {
               />
               <h3 className="font-medium text-sm line-clamp-2">{item.name}</h3>
               <div className="flex items-center mt-1">
-                <span className="font-bold text-green-600 text-sm">${item.price}</span>
+                <span className="font-bold text-green-600 text-sm">{item.price}</span>
                 <div className="ml-auto flex items-center">
                   <FiStar className="text-yellow-400 text-xs mr-1" />
                   <span className="text-xs text-gray-500">{item.rating}</span>

@@ -31,6 +31,19 @@ function CartPage() {
     contactNumber: "",
     isDefault: false,
   });
+  const handleQuantityChange = (id, change) => {
+    const item = cart.find((item) => item.id === id);
+    if (!item) return;
+  
+    const newQty = item.qty + change;
+  
+    if (newQty <= 0) {
+      dispatch({ type: "REMOVE", id });
+    } else {
+      dispatch({ type: "UPDATE", id, qty: newQty, price: (item.price / item.qty) * newQty });
+    }
+  };
+  
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -46,7 +59,9 @@ function CartPage() {
       audioRef.current.play().catch(() => {
         console.log("Audio preloaded after user interaction.");
       });
-      window.removeEventListener("click", handleUserInteraction);
+      window.
+      
+      removeEventListener("click", handleUserInteraction);
     };
 
     window.addEventListener("click", handleUserInteraction);
@@ -79,17 +94,17 @@ function CartPage() {
         });
 
         socket.on("connect", () => {
-          console.log("Connected to socket server with ID:", socket.id);
+          // console.log("Connected to socket server with ID:", socket.id);
           socket.emit("join_customer", user._id);
         });
 
         socket.onAny((event, ...args) => {
-          console.log(`Received event ${event} from ${socket.id}`);
+          // console.log(`Received event ${event} from ${socket.id}`);
         });
 
         // Handle order acceptance
         socket.on("broadcast_accepted", (data) => {
-          console.log("Broadcast accepted notification:", data);
+          // console.log("Broadcast accepted notification:", data);
           if (data && data.retailer) {
             const message = `Your order has been accepted by ${data.retailer.name}`;
             setNotifications((prev) => [
@@ -107,7 +122,7 @@ function CartPage() {
 
         // Handle status updates
         socket.on("broadcast_status_updated", (data) => {
-          console.log("Status update notification:", data);
+          // console.log("Status update notification:", data);
           if (data && data.newStatus && data.retailer) {
             const statusMessages = {
               preparing: "is preparing your order",
@@ -164,7 +179,7 @@ function CartPage() {
 
     return () => {
       if (socket) {
-        console.log("Cleaning up socket connection");
+        // console.log("Cleaning up socket connection");
         socket.off("broadcast_accepted");
         socket.off("broadcast_status_updated");
         socket.disconnect();
@@ -290,7 +305,7 @@ function CartPage() {
               </span>
             )}
           </button>
-          // In your notification dropdown JSX:
+         
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-10">
               <div className="p-2 border-b flex justify-between items-center">

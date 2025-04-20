@@ -41,7 +41,7 @@ const BroadcastSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'rejected', 'completed', 'cancelled'],
+    enum: ["pending", "accepted", "rejected", "completed", "cancelled", "timed_out"],
     default: 'pending',
   },
   paymentDetails: {

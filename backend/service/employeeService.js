@@ -38,7 +38,7 @@ class EmployeeService {
       retailer.employees.push(employee._id);
       await retailer.save({ session });
 
-      const url = `http://localhost:5173/login`; // You might want to set this in your env
+      const url = `http://localhost:5173/login`; 
       await new Email(employee, url).welcomeEmployee();
 
 

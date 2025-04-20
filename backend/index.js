@@ -29,7 +29,7 @@ const io = new Server(server, {
   origin: "http://localhost:5173/",
 });
 
-// ✅ Make io accessible throughout the app using app.get('io')
+
 app.set("io", io);
 
 // Also make io available in routes via req.io
@@ -71,6 +71,8 @@ app.use("/api/customers", require("./router/retailerRoute/customerRoutes"));
 app.use("/api/broadcasts", require("./router/retailerRoute/broadcastRoutes"));
 app.use("/api/delivery", require("./router/retailerRoute/deliveryRoutes"));
 app.use("/api", require("./middleware/upload"));
+
+
 
 // Health check
 app.get("/", (req, res) => {

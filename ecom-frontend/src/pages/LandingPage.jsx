@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { 
   FiSearch, FiClock, FiTruck, FiPackage, FiRefreshCw, 
-  FiStar, FiMapPin, FiShoppingBag, FiChevronRight 
+  FiStar, FiMapPin, FiShoppingBag, FiChevronRight, 
+  FiHeart
 } from 'react-icons/fi';
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,10 +71,10 @@ const LandingPage = () => {
   ];
 
   const quickActions = [
-    { id: 1, name: 'Quick Delivery', icon: <FiTruck />, color: 'bg-blue-100 text-blue-600' },
-    { id: 2, name: 'My Orders', icon: <FiPackage />, color: 'bg-green-100 text-green-600' },
-    { id: 3, name: 'Track Order', icon: <FiMapPin />, color: 'bg-purple-100 text-purple-600' },
-    { id: 4, name: 'Refill', icon: <FiRefreshCw />, color: 'bg-orange-100 text-orange-600' }
+    { id: 1, name: 'Quick Delivery', icon: <FiTruck />, color: 'bg-blue-100 text-blue-600',route: "/Allproduct" },
+    { id: 2, name: 'My Orders', icon: <FiPackage />, color: 'bg-green-100 text-green-600',route: "/my-orders" },
+    { id: 3, name: 'Track Order', icon: <FiMapPin />, color: 'bg-purple-100 text-purple-600',route: "/" },
+    { id: 4, name: 'Wishlist', icon: <FiHeart />, color: 'bg-orange-100 text-orange-600',route: "/wishlist" }
   ];
 
   const banners = [
@@ -172,6 +174,7 @@ const LandingPage = () => {
       image: 'https://marveltea.com/cdn/shop/files/OrganicGreenTea-min.webp?v=1724847412'
     }
   ];
+  const navigate = useNavigate();
   
 
   const carouselSettings = {
@@ -226,10 +229,11 @@ const LandingPage = () => {
         <h2 className="text-xl font-bold mb-4">Quick Access</h2>
         <div className="grid grid-cols-2 gap-3">
           {quickActions.map((action) => (
-            <button
-              key={action.id}
-              className={`p-3 rounded-lg flex items-center ${action.color}`}
-            >
+                <button
+                key={action.id}
+                onClick={() => navigate(action.route)}
+                className={`p-3 rounded-lg flex items-center ${action.color}`}
+              >
               <div className="text-xl mr-3">{action.icon}</div>
               <span className="font-medium">{action.name}</span>
             </button>

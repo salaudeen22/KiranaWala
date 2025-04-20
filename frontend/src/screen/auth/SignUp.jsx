@@ -474,7 +474,7 @@ const VendorSignUp = () => {
                       <>
                       <motion.button
                       type="button"
-                      onClick={() => navigate("/onwersignup")}
+                      onClick={() => navigate("/ownersignup")}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="px-5 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"

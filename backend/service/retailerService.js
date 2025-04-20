@@ -1,6 +1,6 @@
 const Retailer = require("../model/vendorSchema");
 const bcrypt = require("bcryptjs");
-const { Email } = require("../utils/sendMail");
+const Email  = require("../utils/sendMail");
 
 exports.createRetailer = async (retailerData) => {
   const retailer = new Retailer(retailerData);

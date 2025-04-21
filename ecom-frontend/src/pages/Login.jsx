@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiMail, FiLock, FiShoppingBag, FiPhone, FiUserPlus } from 'react-icons/fi';
 import { FaGoogle, FaFacebook, FaApple } from 'react-icons/fa';
@@ -24,8 +24,6 @@ function Login() {
     }
   };
 
-
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-4">
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -40,9 +38,6 @@ function Login() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h1>
             <p className="text-gray-600">Login to access your personalized shopping experience</p>
           </div>
-
-      
-   
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center">
@@ -120,6 +115,11 @@ function Login() {
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-600">
+            <p>
+              <Link to="/forgot-password" className="text-indigo-600 font-semibold hover:underline focus:outline-none">
+                Forgot Password?
+              </Link>
+            </p>
             Don't have an account?{' '}
             <button 
               onClick={() => navigate('/register')}
@@ -175,8 +175,6 @@ function Login() {
                 </li>
               </ul>
             </div>
-
-         
 
             <div className="mt-8 text-center text-white/80 text-sm">
               <p>By logging in, you agree to our Terms of Service and Privacy Policy</p>

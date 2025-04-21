@@ -3,13 +3,14 @@ const asyncHandler = require('express-async-handler');
 const { signToken, createSendToken } = require('../utils/auth');
 const AppError = require('../utils/appError');
 const bcrypt = require('bcryptjs');
-const CustomerService=require("../service/customerService");
+const CustomerService = require("../service/customerService");
 const { v4: uuidv4 } = require('uuid');
-const Product=require("../model/productSchema");
-const Retailer=require("../model/vendorSchema");
-
-const  Broadcast=require("../model/BroadcastSchema");
-const BroadcastService=require("../service/BroadcastService");
+const Product = require("../model/productSchema");
+const Retailer = require("../model/vendorSchema");
+const Broadcast = require("../model/BroadcastSchema");
+const BroadcastService = require("../service/BroadcastService");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
 // @desc    Register customer
 // @route   POST /api/customers/register
@@ -73,7 +74,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.getProfile = asyncHandler(async (req, res, next) => {
   console.log(req.user);
-  const customer = await Customer.findById(req.user.id) .select('-password -__v');
+  const customer = await Customer.findById(req.user.id).select('-password -__v');
   
   if (!customer) {
     return next(new AppError('Customer not found', 404));
@@ -211,6 +212,24 @@ exports.updatePassword = asyncHandler(async (req, res, next) => {
   // 3) Log customer in with new token
   createSendToken(customer, 200, res);
 });
+
+// @desc    Change password
+// @route   POST /api/customers/change-password
+// @access  Private
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const customer = await Customer.findById(req.user.id).select("+password");
+
+  if (!customer) return res.status(404).json({ message: "Customer not found" });
+
+  const isMatch = await customer.comparePassword(currentPassword);
+  if (!isMatch) return res.status(400).json({ message: "Current password is incorrect" });
+
+  customer.password = newPassword;
+  await customer.save();
+
+  res.status(200).json({ message: "Password changed successfully" });
+};
 
 // @desc    Delete account
 // @route   DELETE /api/customers/profile
@@ -370,8 +389,6 @@ exports.cancelBroadcast = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Add these to your existing exports
-
 // @desc    Get customer orders
 // @route   GET /api/customers/orders
 // @access  Private
@@ -424,4 +441,61 @@ exports.cancelOrder = asyncHandler(async (req, res, next) => {
     data: order
   });
 });
+
+// @desc    Request password reset
+// @route   POST /api/customers/request-password-reset
+// @access  Public
+exports.requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+  const customer = await Customer.findOne({ email });
+  if (!customer) return res.status(404).json({ message: "Customer not found" });
+
+  const token = crypto.randomBytes(32).toString("hex");
+  customer.resetPasswordToken = token;
+  customer.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+  await customer.save();
+
+  const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    to: email,
+    from: process.env.EMAIL_USER,
+    subject: "Password Reset",
+    text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+           Please click on the following link, or paste this into your browser to complete the process:\n\n
+           http://localhost:5174/reset-password/${token}\n\n
+           If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+  };
+
+  transporter.sendMail(mailOptions, (err) => {
+    if (err) return res.status(500).json({ message: "Email could not be sent" });
+    res.status(200).json({ message: "Password reset email sent" });
+  });
+};
+
+// @desc    Reset password
+// @route   POST /api/customers/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+  const customer = await Customer.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!customer) return res.status(400).json({ message: "Invalid or expired token" });
+
+  customer.password = newPassword;
+  customer.resetPasswordToken = undefined;
+  customer.resetPasswordExpires = undefined;
+  await customer.save();
+
+  res.status(200).json({ message: "Password reset successful" });
+};
 

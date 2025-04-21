@@ -11,8 +11,8 @@ const retailerController=require("../../controller/retailerController");
 // Public routes
 router.post('/register', customerController.register);
 router.post('/login', customerController.login);
-// z
-// router.post('/forgot-password', customerController.f);
+router.post('/forgot-password', customerController.requestPasswordReset);
+router.post('/reset-password', customerController.resetPassword);
 
 // Protected routes (customer must be logged in)
 // router.use(protect);
@@ -21,6 +21,7 @@ router.post('/login', customerController.login);
 router.get('/profile',customerProtect, customerController.getProfile);
 router.put('/profile',customerProtect, customerController.updateProfile);
 router.delete('/profile',customerProtect, customerController.deleteAccount);
+router.put('/change-password', customerProtect, customerController.changePassword);
 
 
 // Address management

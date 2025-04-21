@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   FiUser, FiMail, FiPhone, FiEdit, FiSave, 
-  FiLock, FiHome, FiMapPin, FiTrash2, FiPlus, FiHeart 
+  FiLock, FiHome, FiMapPin, FiTrash2, FiPlus, 
+  FiHeart, FiX, FiKey, FiCheck, FiAlertCircle
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import axios from "axios";
+import Modal from 'react-modal';
+
+// Make sure to bind modal to your appElement
+Modal.setAppElement('#root');
 
 function Profile() {
   const { user, updateProfile, loading } = useAuth();
@@ -28,6 +34,14 @@ function Profile() {
   const [success, setSuccess] = useState('');
   const [showAddressForm, setShowAddressForm] = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -48,7 +62,6 @@ function Profile() {
       });
       const data = await response.json();
   
-    
       if (response.ok) {
         setAddresses(data.data);
       } else {
@@ -113,7 +126,6 @@ function Profile() {
 
       const data = await response.json();
         
-      
       if (!response.ok) {
         throw new Error(data.message || 'Failed to save address');
       }
@@ -176,25 +188,62 @@ function Profile() {
     setShowAddressForm(false);
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    try {
+      const authToken = localStorage.getItem("authToken");
+      const response = await axios.put(
+        "http://localhost:6565/api/customers/change-password",
+        { currentPassword, newPassword },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      setPasswordMessage(response.data.message);
+      // Clear form on success
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setPasswordMessage("");
+        setIsPasswordModalOpen(false);
+      }, 3000);
+    } catch (error) {
+      setPasswordError(error.response?.data?.message || "Something went wrong");
+    }
+  };
+
   if (loading) return <div className="text-center py-8">Loading profile...</div>;
   if (!user) return <div className="text-center py-8">Please login to view profile</div>;
 
   return (
-    <div className=" p-4">
+    <div className="p-4 max-w-6xl mx-auto">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white">
           <h1 className="text-2xl font-bold">My Profile</h1>
-          <p className="text-green-100">Manage your KiranWalla account</p>
+          <p className="text-green-100">Manage your account information and preferences</p>
         </div>
 
         <div className="p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg">
+            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center">
+              <FiAlertCircle className="mr-2" />
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg">
+            <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg flex items-center">
+              <FiCheck className="mr-2" />
               {success}
             </div>
           )}
@@ -209,6 +258,16 @@ function Profile() {
                 </div>
                 <h2 className="text-xl font-semibold text-center">{user.name}</h2>
                 <p className="text-gray-600 text-center">{user.email}</p>
+                
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={() => setIsPasswordModalOpen(true)}
+                    className="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    <FiKey className="mr-2" />
+                    Change Password
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -448,19 +507,6 @@ function Profile() {
           </div>
 
           <div className="mt-8 border-t border-gray-200 pt-6">
-            <h2 className="text-xl font-semibold mb-4">Account Security</h2>
-            <div className="space-y-3">
-              <button className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                <div className="flex items-center">
-                  <FiLock className="text-gray-500 mr-3" />
-                  <span>Change Password</span>
-                </div>
-                <span className="text-gray-400">→</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-8 border-t border-gray-200 pt-6">
             <h2 className="text-xl font-semibold mb-4">Wishlist</h2>
             <div className="space-y-3">
               <Link to="/wishlist" className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
@@ -474,6 +520,147 @@ function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      <Modal
+        isOpen={isPasswordModalOpen}
+        onRequestClose={() => setIsPasswordModalOpen(false)}
+        contentLabel="Change Password"
+        className="modal"
+        overlayClassName="modal-overlay"
+      >
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Change Password</h2>
+            <button 
+              onClick={() => setIsPasswordModalOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+
+          {passwordMessage ? (
+            <div className="p-4 bg-green-50 text-green-700 rounded-lg mb-4 flex items-center">
+              <FiCheck className="mr-2" />
+              {passwordMessage}
+            </div>
+          ) : (
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              {passwordError && (
+                <div className="p-4 bg-red-50 text-red-700 rounded-lg mb-4 flex items-center">
+                  <FiAlertCircle className="mr-2" />
+                  {passwordError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiLock className="text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiKey className="text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter new password"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiKey className="text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Confirm new password"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Change Password
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </Modal>
+
+      {/* Modal Styles */}
+      <style jsx global>{`
+        .modal {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          right: auto;
+          bottom: auto;
+          margin-right: -50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 0;
+          border-radius: 0.5rem;
+          outline: none;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 1000;
+        }
+      `}</style>
     </div>
   );
 }

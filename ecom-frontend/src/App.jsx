@@ -15,6 +15,8 @@ import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import HelpCenter from "./pages/HelpCenter";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -38,10 +40,11 @@ function App() {
               <Route path="wishlist" element={<Wishlist />} />
               <Route path="my-orders" element={<MyOrder />} /> 
               <Route path="help" element={<HelpCenter />} />
-
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
           </Routes>
         </SidebarProvider>
       </CartProvider>

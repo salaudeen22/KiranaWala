@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   FiRefreshCw,
   FiBell,
@@ -6,12 +6,10 @@ import {
   FiCheck,
   FiTruck,
   FiPackage,
-  FiClock,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
 
 const Broadcasts = () => {
-  const audioRef = useRef(null);
   const [broadcasts, setBroadcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,7 +17,6 @@ const Broadcasts = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState(null);
-  const [timers, setTimers] = useState({});
 
   // Fetch broadcasts from API
   const fetchBroadcasts = async () => {
@@ -36,81 +33,14 @@ const Broadcasts = () => {
       if (!response.ok) throw new Error("Failed to fetch broadcasts");
 
       const data = await response.json();
+      console.log(data);
       setBroadcasts(data.data || []);
-      
-      // Initialize timers for pending broadcasts
-      initializeTimers(data.data || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  // Initialize timers for pending broadcasts
-  const initializeTimers = (broadcasts) => {
-    const newTimers = {};
-    broadcasts.forEach(broadcast => {
-      if (broadcast.status === "pending") {
-        const createdAt = new Date(broadcast.createdAt);
-        const expiryTime = new Date(createdAt.getTime() + 30 * 60 * 1000); // 30 minutes
-        newTimers[broadcast._id] = {
-          expiryTime,
-          timeLeft: calculateTimeLeft(expiryTime)
-        };
-      }
-    });
-    setTimers(newTimers);
-  };
-
-  // Calculate time left for a timer
-  const calculateTimeLeft = (expiryTime) => {
-    const now = new Date();
-    const diff = expiryTime - now;
-    if (diff <= 0) return "00:00";
-    
-    const minutes = Math.floor((diff / 1000 / 60) % 60);
-    const seconds = Math.floor((diff / 1000) % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  // Update timers every second
-  useEffect(() => {
-    const timerInterval = setInterval(() => {
-      const now = new Date();
-      const updatedTimers = {...timers};
-      let changed = false;
-
-      for (const [broadcastId, timer] of Object.entries(timers)) {
-        const timeLeft = calculateTimeLeft(timer.expiryTime);
-        if (timeLeft !== timer.timeLeft) {
-          updatedTimers[broadcastId] = {
-            ...timer,
-            timeLeft
-          };
-          changed = true;
-        }
-
-        // Check if timer expired
-        if (timeLeft === "00:00" && timer.expiryTime <= now) {
-          // Mark as timed out (this would ideally be handled by the server)
-          const broadcast = broadcasts.find(b => b._id === broadcastId);
-          if (broadcast && broadcast.status === "pending") {
-            // In a real app, you would update the status on the server
-            console.log(`Broadcast ${broadcastId} timed out`);
-            delete updatedTimers[broadcastId];
-            changed = true;
-          }
-        }
-      }
-
-      if (changed) {
-        setTimers(updatedTimers);
-      }
-    }, 1000);
-
-    return () => clearInterval(timerInterval);
-  }, [timers, broadcasts]);
 
   // Update broadcast status
   const updateBroadcastStatus = async (broadcastId, newStatus) => {
@@ -131,16 +61,6 @@ const Broadcasts = () => {
 
       const data = await response.json();
       fetchBroadcasts(); // Refresh the list
-      
-      // Remove timer if status changed from pending
-      if (newStatus !== "pending") {
-        setTimers(prev => {
-          const newTimers = {...prev};
-          delete newTimers[broadcastId];
-          return newTimers;
-        });
-      }
-      
       return data.data;
     } catch (err) {
       alert(err.message);
@@ -151,40 +71,32 @@ const Broadcasts = () => {
   // Handle accepting a broadcast
   const handleAcceptBroadcast = async (broadcastId) => {
     try {
-      const response = await fetch(
-        `http://localhost:6565/api/broadcasts/${broadcastId}/accept`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({ status: "accepted" }), 
-        }
+      const updatedBroadcast = await updateBroadcastStatus(
+        broadcastId,
+        "accepted"
       );
-  
-      if (!response.ok) throw new Error("Failed to accept broadcast");
-  
-      const data = await response.json();
-      fetchBroadcasts();
-      setSelectedBroadcast(data.data);
-      
-      // Remove timer
-      setTimers(prev => {
-        const newTimers = {...prev};
-        delete newTimers[broadcastId];
-        return newTimers;
+
+      // Notify the customer
+      const socket = io("http://localhost:6565");
+      console.log(localStorage.getItem("Id"));
+      socket.emit("broadcast_accepted", {
+        broadcastId: updatedBroadcast._id,
+        retailer: {
+          id: localStorage.getItem("Id"),
+          name: "Retailer Name", // Replace with actual retailer name if available
+          address: "Retailer Address", // Replace with actual retailer address if available
+        },
       });
+
+      setSelectedBroadcast(updatedBroadcast);
     } catch (error) {
-      alert(error.message);
       console.error("Error accepting broadcast:", error);
     }
   };
 
   // Initialize Socket.IO and fetch initial data
+
   useEffect(() => {
-    fetchBroadcasts();
-    
     const socket = io("http://localhost:6565");
     console.log("Connecting to WebSocket server...");
 
@@ -221,6 +133,9 @@ const Broadcasts = () => {
       fetchBroadcasts();
     });
 
+    // Fetch initial data
+    fetchBroadcasts();
+
     return () => {
       console.log("Cleaning up WebSocket connection...");
       socket.disconnect();
@@ -238,14 +153,7 @@ const Broadcasts = () => {
     } else if (filter === "processing") {
       return ["accepted", "preparing", "in_transit"].includes(status);
     } else if (filter === "completed") {
-      return ["delivered"].includes(status);
-    } else if (filter === "rejected") {
-      return ["rejected"].includes(status);
-    } else if (filter === "timed_out") {
-      // Check if broadcast is pending and timer has expired
-      if (status !== "pending") return false;
-      const timer = timers[broadcast._id];
-      return timer && timer.timeLeft === "00:00";
+      return ["delivered", "cancelled"].includes(status);
     }
     return true;
   });
@@ -272,7 +180,6 @@ const Broadcasts = () => {
     );
     if (matchingBroadcast) {
       setSelectedBroadcast(matchingBroadcast);
-      setFilter("pending"); // Switch to pending tab when clicking a notification
     }
   };
 
@@ -301,6 +208,8 @@ const Broadcasts = () => {
       </div>
     );
   }
+  // console.log("All broadcasts:", broadcasts);
+  // console.log("Filter:", filter);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -350,7 +259,7 @@ const Broadcasts = () => {
                   ) : (
                     notifications.map((notification, index) => (
                       <div
-                        key={notification.id || index}
+                        key={notification.id || index} // Ensure unique key
                         className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
                           !notification.read ? "bg-blue-50" : ""
                         }`}
@@ -410,26 +319,6 @@ const Broadcasts = () => {
               }`}
             >
               Completed
-            </button>
-            <button
-              onClick={() => setFilter("rejected")}
-              className={`px-3 py-1 text-sm rounded-lg ${
-                filter === "rejected"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-            >
-              Rejected
-            </button>
-            <button
-              onClick={() => setFilter("timed_out")}
-              className={`px-3 py-1 text-sm rounded-lg ${
-                filter === "timed_out"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-            >
-              Timed Out
             </button>
           </div>
 
@@ -494,12 +383,6 @@ const Broadcasts = () => {
                           <div className="text-xs text-gray-500">
                             {new Date(broadcast.createdAt).toLocaleString()}
                           </div>
-                          {broadcast.status === "pending" && timers[broadcast._id] && (
-                            <div className="flex items-center mt-1 text-xs text-orange-600">
-                              <FiClock className="mr-1" />
-                              {timers[broadcast._id].timeLeft}
-                            </div>
-                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
@@ -521,9 +404,7 @@ const Broadcasts = () => {
                                 ? "bg-purple-100 text-purple-800"
                                 : broadcast.status === "delivered"
                                 ? "bg-green-100 text-green-800"
-                                : broadcast.status === "rejected"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             {broadcast.status
@@ -549,7 +430,6 @@ const Broadcasts = () => {
                               <button
                                 className="text-red-600"
                                 onClick={(e) => {
-                                  e.stopPropagation();
                                   updateBroadcastStatus(
                                     broadcast._id,
                                     "rejected"
@@ -610,17 +490,6 @@ const Broadcasts = () => {
                 <h2 className="text-lg font-semibold mb-4">
                   Order #{selectedBroadcast._id.substring(18, 24)}
                 </h2>
-                
-                {/* Timer display for pending orders */}
-                {selectedBroadcast.status === "pending" && timers[selectedBroadcast._id] && (
-                  <div className="mb-4 p-2 bg-yellow-50 rounded-lg flex items-center">
-                    <FiClock className="text-yellow-600 mr-2" />
-                    <span className="text-sm font-medium text-yellow-800">
-                      Time left: {timers[selectedBroadcast._id].timeLeft}
-                    </span>
-                  </div>
-                )}
-
                 <div className="mb-4">
                   <h3 className="text-sm font-medium text-gray-500 mb-1">
                     Status
@@ -636,9 +505,7 @@ const Broadcasts = () => {
                         ? "text-purple-600"
                         : selectedBroadcast.status === "completed"
                         ? "text-green-600"
-                        : selectedBroadcast.status === "rejected"
-                        ? "text-red-600"
-                        : "text-gray-600"
+                        : "text-red-600"
                     }`}
                   >
                     {selectedBroadcast.status

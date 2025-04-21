@@ -68,6 +68,7 @@ app.use("/api/e",require("./router/eProductRoute"));
 app.use("/api/employees", require("./router/retailerRoute/employeeRoutes"));
 app.use("/api/owners", require("./router/retailerRoute/ownerRoutes"));
 app.use("/api/retailers", require("./router/retailerRoute/retailerRoutes"));
+app.use("/api/review", require("./router/ReviewRoutes"));
 app.use("/api/analytics", require("./router/retailerRoute/analyticsRoutes"));
 app.use("/api/products", require("./router/retailerRoute/productRoutes"));
 app.use("/api/customers", require("./router/retailerRoute/customerRoutes"));

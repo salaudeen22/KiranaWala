@@ -1,19 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  FiShoppingCart,
-  FiTrash2,
-  FiMinus,
-  FiPlus,
-  FiBell,
-  FiX,
-  FiCheck,
-} from "react-icons/fi";
+import { FiShoppingCart, FiTrash2, FiMinus, FiPlus, FiBell, FiX, FiCheck } from "react-icons/fi";
 import { useCart, useDispatchCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { io } from "socket.io-client";
-import notificationSound from "../assessts/accepted.mp3";
+import notificationSound from "../assessts/mixkit-software-interface-remove-2576.wav";
 
 function CartPage() {
   const cart = useCart();
@@ -31,19 +23,6 @@ function CartPage() {
     contactNumber: "",
     isDefault: false,
   });
-  const handleQuantityChange = (id, change) => {
-    const item = cart.find((item) => item.id === id);
-    if (!item) return;
-  
-    const newQty = item.qty + change;
-  
-    if (newQty <= 0) {
-      dispatch({ type: "REMOVE", id });
-    } else {
-      dispatch({ type: "UPDATE", id, qty: newQty, price: (item.price / item.qty) * newQty });
-    }
-  };
-  
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -59,9 +38,7 @@ function CartPage() {
       audioRef.current.play().catch(() => {
         console.log("Audio preloaded after user interaction.");
       });
-      window.
-      
-      removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("click", handleUserInteraction);
     };
 
     window.addEventListener("click", handleUserInteraction);
@@ -77,113 +54,59 @@ function CartPage() {
     }
   }, [user]);
 
-  // Replace your existing socket handlers with this improved version
   useEffect(() => {
-    let socket;
+    const socket = io("http://localhost:6565", {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+    });
 
-    const initializeSocket = () => {
-      if (user && user._id) {
-        console.log("Initializing socket connection...");
-        socket = io("http://localhost:6565", {
-          auth: {
-            token: localStorage.getItem("authToken"),
-          },
-          transports: ["websocket"],
-          reconnection: true,
-          reconnectionAttempts: Infinity,
-        });
+    if (user) {
+      console.log("Connecting to socket server...");
 
-        socket.on("connect", () => {
-          // console.log("Connected to socket server with ID:", socket.id);
-          socket.emit("join_customer", user._id);
-        });
+      socket.emit("join_customer", user._id);
+      console.log(`Customer joined room: customer_${user._id}`);
 
-        socket.onAny((event, ...args) => {
-          // console.log(`Received event ${event} from ${socket.id}`);
-        });
+      socket.on("connect", () => {
+        console.log("WebSocket connected:", socket.id);
+      });
 
-        // Handle order acceptance
-        socket.on("broadcast_accepted", (data) => {
-          // console.log("Broadcast accepted notification:", data);
-          if (data && data.retailer) {
-            const message = `Your order has been accepted by ${data.retailer.name}`;
-            setNotifications((prev) => [
-              {
-                id: `accept-${Date.now()}`,
-                message,
-                read: false,
-                timestamp: new Date().toISOString(),
-              },
-              ...prev,
-            ]);
-            playNotificationSound();
-          }
-        });
+      socket.on("disconnect", (reason) => {
+        console.warn("WebSocket disconnected:", reason);
+      });
 
-        // Handle status updates
-        socket.on("broadcast_status_updated", (data) => {
-          // console.log("Status update notification:", data);
-          if (data && data.newStatus && data.retailer) {
-            const statusMessages = {
-              preparing: "is preparing your order",
-              ready: "has your order ready",
-              in_transit: "is delivering your order",
-              delivered: "has delivered your order",
-              cancelled: "has cancelled your order",
-            };
+      socket.on("connect_error", (error) => {
+        console.error("WebSocket connection error:", error);
+      });
 
-            const message = `Order status: ${data.retailer.name} ${
-              statusMessages[data.newStatus] ||
-              `status changed to ${data.newStatus}`
-            }`;
+      socket.on("broadcast_accepted", (data) => {
+        console.log("Notification received from server:", data);
 
-            setNotifications((prev) => [
-              {
-                id: `status-${Date.now()}`,
-                message,
-                read: false,
-                timestamp: new Date().toISOString(),
-              },
-              ...prev,
-            ]);
-            playNotificationSound();
-          }
-        });
-
-        socket.on("disconnect", (reason) => {
-          console.log("Disconnected:", reason);
-          if (reason === "io server disconnect") {
-            socket.connect();
-          }
-        });
-
-        socket.on("connect_error", (error) => {
-          console.error("Connection error:", error);
-          setTimeout(() => socket.connect(), 1000);
-        });
-      }
-    };
-
-    const playNotificationSound = () => {
-      try {
-        if (audioRef.current) {
-          const audio = new Audio(notificationSound);
-          audio.play().catch((e) => console.log("Audio play error:", e));
+        if (!data || !data.retailer) {
+          console.error("Invalid data received for broadcast_accepted:", data);
+          return;
         }
-      } catch (e) {
-        console.log("Audio error:", e);
-      }
-    };
 
-    initializeSocket();
+        const message = `Your order has been accepted by retailer ${data.retailer.name}. Address: ${data.retailer.address}`;
+        setNotifications((prev) => [
+          { id: Date.now(), message, read: false },
+          ...prev,
+        ]);
+
+        try {
+          audioRef.current.play().catch((e) => console.log("Audio play failed:", e));
+        } catch (e) {
+          console.log("Audio error:", e);
+        }
+      });
+    } else {
+      console.warn("User is not authenticated. Skipping WebSocket setup.");
+    }
 
     return () => {
-      if (socket) {
-        // console.log("Cleaning up socket connection");
-        socket.off("broadcast_accepted");
-        socket.off("broadcast_status_updated");
-        socket.disconnect();
-      }
+      console.log("Cleaning up WebSocket connection...");
+      socket.disconnect();
     };
   }, [user]);
 
@@ -305,7 +228,6 @@ function CartPage() {
               </span>
             )}
           </button>
-         
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-10">
               <div className="p-2 border-b flex justify-between items-center">
@@ -339,18 +261,8 @@ function CartPage() {
                       className={`p-3 border-b hover:bg-gray-50 ${
                         !notification.read ? "bg-blue-50" : ""
                       }`}
-                      onClick={() => {
-                        setNotifications((prev) =>
-                          prev.map((n) =>
-                            n.id === notification.id ? { ...n, read: true } : n
-                          )
-                        );
-                      }}
                     >
                       <p className="text-sm">{notification.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(notification.timestamp).toLocaleTimeString()}
-                      </p>
                     </div>
                   ))
                 )}

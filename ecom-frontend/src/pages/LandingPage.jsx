@@ -286,8 +286,8 @@ const LandingPage = () => {
                 />
                 <h3 className="font-medium text-sm line-clamp-2 mb-1">{deal.name}</h3>
                 <div className="flex items-end">
-                  <span className="font-bold text-green-600">{deal.price}</span>
-                  <span className="text-xs text-gray-500 line-through ml-2">{deal.originalPrice}</span>
+                  <span className="font-bold text-green-600">₹{deal.price}</span>
+                  <span className="text-xs text-gray-500 line-through ml-2">₹{deal.originalPrice}</span>
                   <span className="ml-auto text-xs bg-red-100 text-red-600 px-1 rounded">{deal.discount}% OFF</span>
                 </div>
               </div>

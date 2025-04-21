@@ -16,6 +16,8 @@ const LandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [loadingRecommended, setLoadingRecommended] = useState(true);
 
   // Fetch order status on component mount
   useEffect(() => {
@@ -66,6 +68,25 @@ const LandingPage = () => {
     };
 
     fetchRecentOrders();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecommendedProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:6565/api/products/public/all");
+        const data = await response.json();
+        if (data.success) {
+          const shuffled = data.data.sort(() => Math.random() - 0.5); // Shuffle products
+          setRecommendedProducts(shuffled.slice(0, 3)); // Select 3 random products
+        }
+      } catch (error) {
+        console.error("Error fetching recommended products:", error);
+      } finally {
+        setLoadingRecommended(false);
+      }
+    };
+
+    fetchRecommendedProducts();
   }, []);
 
   const getProgress = (status) => {
@@ -159,29 +180,6 @@ const LandingPage = () => {
     }
   ];
   
-  const recommended = [
-    {
-      id: 1,
-      name: 'Protein Powder',
-      price: 24.99,
-      rating: 4.5,
-      image: 'https://www.protrition.in/cdn/shop/files/Whey-Protein-Vanilla-1KG.png?v=1737096788'
-    },
-    {
-      id: 2,
-      name: 'Bluetooth Speaker',
-      price: 45.99,
-      rating: 4.2,
-      image: 'https://pyxis.nymag.com/v1/imgs/b7e/35e/d2257113659f8ec67dccfadac2a4c0c001.rsquare.w600.jpg'
-    },
-    {
-      id: 3,
-      name: 'Organic Tea',
-      price: 5.99,
-      rating: 4.7,
-      image: 'https://marveltea.com/cdn/shop/files/OrganicGreenTea-min.webp?v=1724847412'
-    }
-  ];
   const navigate = useNavigate();
   
 
@@ -334,25 +332,31 @@ const LandingPage = () => {
       {/* ❤️ Recommended For You */}
       <div className="px-4 py-6 bg-white">
         <h2 className="text-xl font-bold mb-4">Recommended For You</h2>
-        <div className="flex overflow-x-auto pb-4 -mx-4 px-4">
-          {recommended.map((item) => (
-            <div key={item.id} className="flex-shrink-0 w-32 mr-4">
-              <img 
-                src={item.image} 
-                alt={item.name}
-                className="w-full h-32 object-cover rounded-lg mb-2"
-              />
-              <h3 className="font-medium text-sm line-clamp-2">{item.name}</h3>
-              <div className="flex items-center mt-1">
-                <span className="font-bold text-green-600 text-sm">{item.price}</span>
-                <div className="ml-auto flex items-center">
-                  <FiStar className="text-yellow-400 text-xs mr-1" />
-                  <span className="text-xs text-gray-500">{item.rating}</span>
+        {loadingRecommended ? (
+          <div className="flex justify-center items-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600"></div>
+          </div>
+        ) : (
+          <div className="flex overflow-x-auto pb-4 -mx-4 px-4">
+            {recommendedProducts.map((item) => (
+              <div key={item.id} className="flex-shrink-0 w-32 mr-4">
+                <img 
+                  src={item.images[0]?.url || "/placeholder-product.png"} 
+                  alt={item.name}
+                  className="w-full h-32 object-cover rounded-lg mb-2"
+                />
+                <h3 className="font-medium text-sm line-clamp-2">{item.name}</h3>
+                <div className="flex items-center mt-1">
+                  <span className="font-bold text-green-600 text-sm">₹{item.finalPrice.toFixed(2)}</span>
+                  <div className="ml-auto flex items-center">
+                    <FiStar className="text-yellow-400 text-xs mr-1" />
+                    <span className="text-xs text-gray-500">{item.rating || "N/A"}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 🏪 Nearby Stores */}

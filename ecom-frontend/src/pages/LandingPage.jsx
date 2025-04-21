@@ -8,11 +8,14 @@ import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const LandingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   // Fetch order status on component mount
   useEffect(() => {
@@ -43,6 +46,27 @@ const LandingPage = () => {
     fetchOrderStatus();
   }, []);
 
+  useEffect(() => {
+    const fetchRecentOrders = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get("http://localhost:6565/api/customers/orders", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data.success) {
+          setRecentOrders(response.data.data.slice(0, 2)); // Show only the 2 most recent orders
+        }
+      } catch (error) {
+        console.error("Error fetching recent orders:", error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchRecentOrders();
+  }, []);
 
   const getProgress = (status) => {
     switch (status) {
@@ -132,22 +156,6 @@ const LandingPage = () => {
       originalPrice: 12.99,
       discount: 31,
       image: 'https://m.media-amazon.com/images/I/518nS4BK4zL._AC_UF1000,1000_QL80_.jpg'
-    }
-  ];
-  
-
-  const recentOrders = [
-    {
-      id: 1,
-      name: 'Milk & Bread',
-      date: '2 days ago',
-      image: 'https://www.bigbasket.com/media/uploads/p/xxl/20000005_7-britannia-milk-bread.jpg'
-    },
-    {
-      id: 2,
-      name: 'Phone Case',
-      date: '1 week ago',
-      image: 'https://s.alicdn.com/@sc04/kf/H8519b38d7bb140449670acf13ef98611R.png_720x720q50.png'
     }
   ];
   
@@ -293,24 +301,34 @@ const LandingPage = () => {
       {/* 📦 Recently Ordered */}
       <div className="px-4 py-6">
         <h2 className="text-xl font-bold mb-4">Recently Ordered</h2>
-        <div className="grid grid-cols-2 gap-4">
-          {recentOrders.map((order) => (
-            <div key={order.id} className="bg-white p-3 rounded-lg shadow-sm flex items-center">
-              <img 
-                src={order.image} 
-                alt={order.name}
-                className="w-16 h-16 object-cover rounded-md mr-3"
-              />
-              <div>
-                <h3 className="font-medium">{order.name}</h3>
-                <p className="text-xs text-gray-500">{order.date}</p>
-                <button className="mt-1 text-xs bg-green-50 text-green-600 px-2 py-1 rounded">
-                  Reorder
-                </button>
+        {loadingOrders ? (
+          <div className="flex justify-center items-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600"></div>
+          </div>
+        ) : recentOrders.length === 0 ? (
+          <p className="text-gray-500 text-sm">No recent orders found.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {recentOrders.map((order) => (
+              <div key={order._id} className="bg-white p-3 rounded-lg shadow-sm flex items-center">
+                <img
+                  src={order.items[0]?.image || "/placeholder-product.png"}
+                  alt={order.items[0]?.name || "Product"}
+                  className="w-16 h-16 object-cover rounded-md mr-3"
+                />
+                <div>
+                  <h3 className="font-medium">{order.items[0]?.name || "Product"}</h3>
+                  <p className="text-xs text-gray-500">
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </p>
+                  <button className="mt-1 text-xs bg-green-50 text-green-600 px-2 py-1 rounded">
+                    Reorder
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ❤️ Recommended For You */}

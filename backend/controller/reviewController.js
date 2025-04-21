@@ -84,19 +84,15 @@ exports.updateRetailerRatings = async (retailerId) => {
 // @desc    Get all reviews for a retailer
 // @route   GET /api/reviews/retailer/:retailerId
 // @access  Public
-exports.getRetailerReviews = asyncHandler(async (req, res, next) => {
-  const reviews = await Review.find({ retailer: req.params.retailerId })
-    .sort('-createdAt')
-    .populate('customer', 'name profilePhoto');
-  
-  res.status(200).json({
-    status: 'success',
-    results: reviews.length,
-    data: {
-      reviews
-    }
-  });
-});
+exports.getRetailerReviews = async (req, res) => {
+  try {
+    const { productId } = req.params; // Extract productId from the request params
+    const reviews = await Review.find({ productId }); // Fetch reviews for the product
+    res.status(200).json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching reviews", error });
+  }
+};
 
 // @desc    Get all reviews for a product
 // @route   GET /api/reviews/product/:productId

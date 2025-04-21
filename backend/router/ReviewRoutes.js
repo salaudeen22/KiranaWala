@@ -7,12 +7,11 @@ const upload = require("../middleware/upload");
 router.post(
   "/",
   customerProtect,
-
   reviewController.createReview
 );
 
 router.get("/me", customerProtect, reviewController.getMyReviews);
 
-router.get("/retailer/:retailerId", reviewController.getRetailerReviews);
+router.get("/retailer/:productId", reviewController.getRetailerReviews);
 
 module.exports = router;

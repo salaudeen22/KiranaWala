@@ -1,12 +1,23 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useDispatchCart } from "../context/CartContext";
+import axios from "axios";
 
 function ProductDetailPage() {
   const { state } = useLocation();
   const product = state?.product;
 
   const dispatch = useDispatchCart();
+  const [reviews, setReviews] = useState([]);
+
+  useEffect(() => {
+    if (product?.id) {
+      axios
+        .get(`http://localhost:6565/api/reviews/retailer/${product.id}`)
+        .then((response) => setReviews(response.data))
+        .catch((error) => console.error("Error fetching reviews:", error));
+    }
+  }, [product?.id]);
 
   if (!product)
     return <div className="text-center py-8">Product not found</div>;
@@ -49,6 +60,22 @@ function ProductDetailPage() {
             Add to Cart
           </button>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Reviews</h2>
+        {reviews.length > 0 ? (
+          reviews.map((review) => (
+            <div key={review.id} className="mb-4">
+              <p className="font-bold">{review.customerName}</p>
+              <p className="text-sm text-gray-600">Rating: {review.rating}/5</p>
+              <p>{review.review}</p>
+            </div>
+          ))
+        ) : (
+          <p>No reviews yet.</p>
+        )}
       </div>
     </div>
   );

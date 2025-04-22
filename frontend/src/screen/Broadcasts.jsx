@@ -125,12 +125,18 @@ const Broadcasts = () => {
         ...prev,
       ]);
 
+      fetchBroadcasts();
+    });
+
+    // Handle broadcast accepted event
+    socket.on("broadcast_accepted", (data) => {
+      console.log("Broadcast accepted notification received:", data);
+      alert(`Order accepted by retailer: ${data.retailer.name}`);
+
       const audio = new Audio(
-        "/assets/mixkit-software-interface-remove-2576.wav" // Corrected path
+        "/assets/mixkit-software-interface-remove-2576.wav" // Updated path
       );
       audio.play().catch((e) => console.log("Audio play failed:", e)); // Debug log
-
-      fetchBroadcasts();
     });
 
     // Fetch initial data

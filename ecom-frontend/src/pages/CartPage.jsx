@@ -90,6 +90,25 @@ function CartPage() {
         }
 
         const message = `Your order has been accepted by retailer ${data.retailer.name}. Address: ${data.retailer.address}`;
+        alert(message); // Show alert for accepted order
+        setNotifications((prev) => [
+          { id: Date.now(), message, read: false },
+          ...prev,
+        ]);
+
+        try {
+          audioRef.current.play().catch((e) => console.log("Audio play failed:", e));
+        } catch (e) {
+          console.log("Audio error:", e);
+        }
+      });
+
+      // Listen for broadcast status updates
+      socket.on("broadcast_status_updated", (data) => {
+        console.log("Broadcast status updated:", data);
+
+        const message = `Your order status has been updated to: ${data.newStatus}`;
+        alert(message); // Notify the user about the status update
         setNotifications((prev) => [
           { id: Date.now(), message, read: false },
           ...prev,
@@ -267,16 +286,13 @@ function CartPage() {
                     No new notifications
                   </div>
                 ) : (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-3 border-b hover:bg-gray-50 ${
-                        !notification.read ? "bg-blue-50" : ""
-                      }`}
-                    >
-                      <p className="text-sm">{notification.message}</p>
-                    </div>
-                  ))
+                  <div className="notifications">
+                    {notifications.map((notification) => (
+                      <div key={notification.id} className="notification">
+                        <p className="text-sm">{notification.message}</p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

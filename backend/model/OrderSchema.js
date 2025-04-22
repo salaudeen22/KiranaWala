@@ -88,7 +88,17 @@ const OrderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'],
+    enum: [
+      'pending',        // Initial state
+      'confirmed',      // Retailer accepted order
+      'preparing',      // Items being prepared (e.g., food)
+      'packed',         // Items packed and ready
+      'shipped',        // Dispatched for delivery
+      'in_transit',     // Out for delivery
+      'delivered',      // Successfully delivered
+      'cancelled',      // Order cancelled
+      'returned'        // Returned after delivery
+    ],
     default: 'pending'
   },
   trackingNumber: {

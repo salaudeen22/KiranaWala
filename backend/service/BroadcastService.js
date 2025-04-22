@@ -5,6 +5,15 @@ const Delivery = require("../model/Delivery");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
 
+const validStatuses = [
+  "pending",
+  "accepted",
+  "rejected",
+  "expired",
+  "shipped",
+  "completed",
+];
+
 class BroadcastService {
   static async validateProducts(products) {
     if (!products || !Array.isArray(products)) {
@@ -156,6 +165,24 @@ class BroadcastService {
     const broadcast = await Broadcast.findById(broadcastId).populate(
       "customerId retailerId products.productId",
       "name email location price"
+    );
+
+    if (!broadcast) {
+      throw new AppError("Broadcast not found", 404);
+    }
+
+    return broadcast;
+  }
+
+  static async updateBroadcastStatus(broadcastId, status) {
+    if (!validStatuses.includes(status)) {
+      throw new AppError(`Invalid status: ${status}`, 400);
+    }
+
+    const broadcast = await Broadcast.findByIdAndUpdate(
+      broadcastId,
+      { status },
+      { new: true }
     );
 
     if (!broadcast) {

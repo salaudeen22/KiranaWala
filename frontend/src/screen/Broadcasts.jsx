@@ -151,9 +151,9 @@ const Broadcasts = () => {
     if (filter === "pending") {
       return status === "pending";
     } else if (filter === "processing") {
-      return ["accepted", "preparing", "in_transit"].includes(status);
+      return ["accepted", "preparing", "shipped"].includes(status);
     } else if (filter === "completed") {
-      return ["delivered", "cancelled"].includes(status);
+      return ["delivered", "cancelled", "completed"].includes(status);
     }
     return true;
   });
@@ -397,12 +397,14 @@ const Broadcasts = () => {
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               broadcast.status === "pending"
                                 ? "bg-yellow-100 text-yellow-800"
-                                : broadcast.status === "accepted" ||
-                                  broadcast.status === "preparing"
+                                : ["accepted", "preparing"].includes(
+                                    broadcast.status
+                                  )
                                 ? "bg-blue-100 text-blue-800"
-                                : broadcast.status === "in_transit"
+                                : broadcast.status === "shipped"
                                 ? "bg-purple-100 text-purple-800"
-                                : broadcast.status === "delivered"
+                                : broadcast.status === "delivered" ||
+                                  broadcast.status === "completed"
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
                             }`}
@@ -463,11 +465,11 @@ const Broadcasts = () => {
                                 e.stopPropagation();
                                 updateBroadcastStatus(
                                   broadcast._id,
-                                  "in_transit"
+                                  "shipped"
                                 );
                               }}
                               className="text-purple-600 hover:text-purple-900"
-                              title="Mark as In Transit"
+                              title="Mark as Shipped"
                             >
                               <FiTruck className="inline" />
                             </button>
@@ -501,7 +503,7 @@ const Broadcasts = () => {
                         : selectedBroadcast.status === "accepted" ||
                           selectedBroadcast.status === "preparing"
                         ? "text-blue-600"
-                        : selectedBroadcast.status === "in_transit"
+                        : selectedBroadcast.status === "shipped"
                         ? "text-purple-600"
                         : selectedBroadcast.status === "completed"
                         ? "text-green-600"

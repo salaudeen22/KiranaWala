@@ -41,8 +41,15 @@ const BroadcastSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "accepted", "rejected", "completed", "cancelled", "timed_out"],
-    default: 'pending',
+    enum: [
+      'pending',       // Waiting for retailer response
+      'accepted',      // Retailer accepted broadcast
+      'rejected',      // No retailers accepted
+      'expired',       // Broadcast timed out
+      'shipped',       // Order is shipped
+      'completed'      // Order fulfillment completed
+    ],
+    default: 'pending'
   },
   paymentDetails: {
     method: {

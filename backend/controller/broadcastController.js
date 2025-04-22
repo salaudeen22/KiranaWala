@@ -219,6 +219,16 @@ exports.getLatestBroadcastStatus = async (req, res, next) => {
     next(err);
   }
 };
+
+const validStatuses = [
+  "pending",
+  "accepted",
+  "rejected",
+  "expired",
+  "shipped",
+  "completed",
+];
+
 exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   const broadcastId = req.params.id;
   const { status } = req.body;
@@ -233,16 +243,6 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   }
 
   // Validate status
-  const validStatuses = [
-    "pending",
-    "ready",
-    "in_transit",
-    "accepted",
-    "preparing",
-    "rejected",
-    "delivered",
-    "cancelled",
-  ];
   if (!status || !validStatuses.includes(status)) {
     console.error(`Invalid status: ${status}`);
     return next(new AppError(`Invalid status: ${status}`, 400));
@@ -252,12 +252,12 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   const broadcast = await Broadcast.findOneAndUpdate(
     {
       _id: broadcastId,
-      expiryTime: { $gt: new Date() }
+      expiryTime: { $gt: new Date() },
     },
     {
       status,
       retailerId,
-      acceptedAt: status === "accepted" ? new Date() : undefined
+      acceptedAt: status === "accepted" ? new Date() : undefined,
     },
     { new: true }
   );
@@ -269,38 +269,21 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
 
   console.log("Broadcast updated:", broadcast);
 
-  // Fetch retailer details
-  const retailer = await Retailer.findById(retailerId).select("name location");
-  if (!retailer) {
-    console.error("Retailer not found");
-    return next(new AppError("Retailer not found", 404));
-  }
+  // Notify customer
+  const io = req.app.get("io");
+  io.to(`customer_${broadcast.customerId}`).emit("broadcast_status_updated", {
+    broadcastId: broadcast._id,
+    newStatus: status,
+    retailer: {
+      id: retailerId,
+      name: req.user.name,
+    },
+  });
 
-  console.log("Retailer details:", retailer);
-
-  try {
-    const io = req.app.get('io');
-
-    io.to(`customer_${broadcast.customerId}`).emit("broadcast_status_updated", {
-      broadcastId: broadcast._id,
-      newStatus: status,
-      retailer: {
-        id: retailer._id,
-        name: retailer.name,
-        address: retailer.location?.address || "Address not available"
-      }
-    });
-
-    console.log(`Notified customer_${broadcast.customerId} about status update to ${status}`);
-
-    res.status(200).json({
-      success: true,
-      data: broadcast
-    });
-  } catch (error) {
-    console.error("Error sending notification:", error);
-    return next(new AppError("Failed to send notification", 500));
-  }
+  res.status(200).json({
+    success: true,
+    data: broadcast,
+  });
 });
 
 exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {

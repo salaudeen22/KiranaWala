@@ -1,5 +1,6 @@
 import { useUser } from "../context/userContext";
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 function Setting() {
   const { user, updateUser } = useUser();
@@ -82,6 +83,39 @@ function Setting() {
       newServiceAreas.splice(index, 1);
       return { ...prev, serviceAreas: newServiceAreas };
     });
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      const response = await fetch('http://localhost:6565/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Settings Updated',
+          text: 'Your settings have been saved successfully.',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error Saving Settings',
+          text: 'Failed to save settings. Please try again.',
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Unable to connect to the server. Please try again later.',
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -420,7 +454,7 @@ function Setting() {
           <div className="mt-8 flex justify-end">
             <button 
               className={`px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-              onClick={handleSave}
+              onClick={handleSaveSettings}
               disabled={isLoading}
             >
               {isLoading ? 'Saving...' : 'Save Changes'}

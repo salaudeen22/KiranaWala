@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import axios from "axios";
 import { FiMail, FiSend, FiArrowLeft } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -16,9 +16,17 @@ function ForgotPassword() {
         "http://localhost:6565/api/customers/forgot-password",
         { email }
       );
-      setMessage(response.data.message);
+      Swal.fire({
+        icon: "success",
+        title: "Email Sent",
+        text: response.data.message,
+      });
     } catch (error) {
-      setMessage(error.response?.data?.message || "Something went wrong");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Something went wrong",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -113,18 +121,6 @@ function ForgotPassword() {
               </button>
             </div>
           </form>
-
-          {message && (
-            <div
-              className={`mt-4 p-3 rounded-md ${
-                message.includes("success") || message.includes("sent")
-                  ? "bg-green-50 text-green-800"
-                  : "bg-red-50 text-red-800"
-              }`}
-            >
-              {message}
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -58,6 +58,49 @@ const Profile = ({ handleUpdateProfile }) => {
     }
   };
 
+  const deleteAddress = async (id) => {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const response = await fetch(`http://localhost:6565/api/customers/address/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Address Deleted',
+          text: 'The address has been removed successfully.',
+        });
+        fetchAddresses();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error Deleting Address',
+          text: 'Failed to delete the address.',
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Unable to connect to the server. Please try again later.',
+      });
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

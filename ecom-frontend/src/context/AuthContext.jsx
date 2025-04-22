@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import Swal from "sweetalert2";
 
 const AuthContext = createContext();
 
@@ -93,11 +94,26 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json();
       if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Registration Successful',
+          text: 'You can now log in with your credentials.',
+        });
         return { success: true };
       } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Registration Failed',
+          text: data.message || 'Something went wrong.',
+        });
         return { success: false, message: data.message || 'Registration failed' };
       }
     } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Unable to connect to the server. Please try again later.',
+      });
       return { success: false, message: 'Network error' };
     }
   };
@@ -116,12 +132,27 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       if (response.ok) {
         setUser(data.data);
-        localStorage.setItem('user', JSON.stringify(data.data)); // Persist updated user data
+        localStorage.setItem('user', JSON.stringify(data.data));
+        Swal.fire({
+          icon: 'success',
+          title: 'Profile Updated',
+          text: 'Your profile has been updated successfully.',
+        });
         return { success: true };
       } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Update Failed',
+          text: data.message || 'Unable to update profile.',
+        });
         return { success: false, message: data.message || 'Update failed' };
       }
     } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Unable to connect to the server. Please try again later.',
+      });
       return { success: false, message: 'Network error' };
     }
   };

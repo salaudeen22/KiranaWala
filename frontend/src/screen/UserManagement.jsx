@@ -183,6 +183,85 @@ const UserManagement = () => {
     }
   };
 
+  const handleAddEmployee = async () => {
+    try {
+      const response = await fetch('http://localhost:6565/api/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify(newEmployee),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Employee Added',
+          text: 'The new employee has been added successfully.',
+        });
+        setEmployeeData([...employeeData, data.data]);
+        setIsOpen(false);
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error Adding Employee',
+          text: data.message || 'Failed to add employee.',
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Unable to connect to the server. Please try again later.',
+      });
+    }
+  };
+
+  const handleDeleteEmployee = async (id) => {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const response = await fetch(`http://localhost:6565/api/employees/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Employee Deleted',
+          text: 'The employee has been removed successfully.',
+        });
+        setEmployeeData(employeeData.filter((emp) => emp.id !== id));
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error Deleting Employee',
+          text: 'Failed to delete the employee.',
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Unable to connect to the server. Please try again later.',
+      });
+    }
+  };
+
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Are you sure?",

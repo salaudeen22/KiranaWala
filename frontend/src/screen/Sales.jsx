@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AiOutlinePlusCircle, AiOutlineDelete, AiOutlinePrinter } from "react-icons/ai";
 import { FiSearch, FiPlus, FiMinus } from "react-icons/fi";
+import Swal from "sweetalert2";
 
 const Sales = () => {
   const [items, setItems] = useState([]);
@@ -19,8 +20,26 @@ const Sales = () => {
     setNewItem({ barcode: "", name: "", id: "", price: "", quantity: 1 });
   };
 
-  const removeItem = (index) => {
-    setItems(items.filter((_, i) => i !== index));
+  const handleRemoveItem = (index) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'This item will be removed from the cart.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, remove it!',
+      cancelButtonText: 'Cancel',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedItems = [...items];
+        updatedItems.splice(index, 1);
+        setItems(updatedItems);
+        Swal.fire({
+          icon: 'success',
+          title: 'Item Removed',
+          text: 'The item has been removed from the cart.',
+        });
+      }
+    });
   };
 
   const updateQuantity = (index, newQuantity) => {
@@ -28,6 +47,11 @@ const Sales = () => {
     const updatedItems = [...items];
     updatedItems[index].quantity = newQuantity;
     setItems(updatedItems);
+    Swal.fire({
+      icon: 'success',
+      title: 'Quantity Updated',
+      text: `The quantity has been updated to ${newQuantity}.`,
+    });
   };
 
   const filteredItems = items.filter(item => 
@@ -209,7 +233,7 @@ const Sales = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => removeItem(index)}
+                        onClick={() => handleRemoveItem(index)}
                         className="text-red-600 hover:text-red-900"
                       >
                         <AiOutlineDelete className="text-lg" />

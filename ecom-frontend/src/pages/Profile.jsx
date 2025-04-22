@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom';
 import axios from "axios";
 import Modal from 'react-modal';
+import Swal from "sweetalert2";
 
 // Make sure to bind modal to your appElement
 Modal.setAppElement('#root');
@@ -93,13 +94,28 @@ function Profile() {
     setError('');
     setSuccess('');
     
-    const result = await updateProfile(formData);
-    if (result.success) {
-      setSuccess('Profile updated successfully!');
-      setEditMode(false);
-      setTimeout(() => setSuccess(''), 3000);
-    } else {
-      setError(result.message || 'Failed to update profile');
+    try {
+      const result = await updateProfile(formData);
+      if (result.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Profile Updated",
+          text: "Your profile information has been updated successfully.",
+        });
+        setEditMode(false);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: result.message || "Unable to update profile.",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Something went wrong. Please try again later.",
+      });
     }
   };
 

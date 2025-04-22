@@ -8,6 +8,7 @@ import {
   FiPackage,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
+import Swal from "sweetalert2";
 
 const Broadcasts = () => {
   const [broadcasts, setBroadcasts] = useState([]);
@@ -33,10 +34,13 @@ const Broadcasts = () => {
       if (!response.ok) throw new Error("Failed to fetch broadcasts");
 
       const data = await response.json();
-      console.log(data);
-      setBroadcasts(data.data || []);
+      setBroadcasts(data);
     } catch (err) {
-      setError(err.message);
+      Swal.fire({
+        icon: "error",
+        title: "Error Fetching Broadcasts",
+        text: err.message || "Unable to fetch broadcasts. Please try again later.",
+      });
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { FiMail, FiLock, FiShoppingBag, FiPhone, FiUserPlus } from 'react-icons/fi';
 import { FaGoogle, FaFacebook, FaApple } from 'react-icons/fa';
 import { RiCoupon2Line } from 'react-icons/ri';
+import Swal from "sweetalert2";
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -16,11 +17,28 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const result = await login(email, password);
-    if (result.success) {
-      navigate('/');
-    } else {
-      setError(result.message);
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Login Successful',
+          text: 'Welcome back!',
+        });
+        navigate('/');
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Login Failed',
+          text: result.message || 'Invalid credentials',
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Network Error',
+        text: 'Something went wrong. Please try again later.',
+      });
     }
   };
 

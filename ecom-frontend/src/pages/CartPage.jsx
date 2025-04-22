@@ -165,14 +165,33 @@ function CartPage() {
     setNotifications([]);
   };
 
+  const clearCart = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'This will remove all items from your cart.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, clear it!',
+      cancelButtonText: 'Cancel',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch({ type: 'DROP' });
+        Swal.fire({
+          icon: 'success',
+          title: 'Cart Cleared',
+          text: 'All items have been removed from your cart.',
+        });
+      }
+    });
+  };
+
   const handleCheckout = async () => {
     if (!selectedAddress) {
-      Swal.fire("Error", "Please select or add a delivery address.", "error");
+      Swal.fire('Error', 'Please select or add a delivery address.', 'error');
       return;
     }
 
     try {
-      // Step 1: Create the order and retrieve the orderId
       const orderPayload = {
         customerId: user.id,
         retailerId: "67f0e6ae966a110b2d0fea79",
@@ -203,15 +222,12 @@ function CartPage() {
         }
       );
 
-      const orderId = orderResponse.data?.data?._id; // Extract orderId from the response
+      const orderId = orderResponse.data?.data?._id;
 
       if (!orderId) {
         throw new Error("Order ID not returned from the server.");
       }
 
-      console.log("Order ID:", orderId); // Debugging log to ensure orderId is received
-
-      // Step 2: Create the broadcast using the retrieved orderId
       const broadcastPayload = {
         products: cart.map((item) => ({
           productId: item.id,
@@ -220,10 +236,8 @@ function CartPage() {
         coordinates: [77.5946, 12.9716],
         paymentMethod: "UPI",
         deliveryAddress: selectedAddress,
-        orderId, // Include the orderId in the broadcast payload
+        orderId,
       };
-
-      console.log("Broadcast Payload:", broadcastPayload); // Debugging log to ensure payload is correct
 
       await axios.post(
         "http://localhost:6565/api/broadcasts",
@@ -235,10 +249,9 @@ function CartPage() {
         }
       );
 
-      Swal.fire("Success", "Order placed successfully!", "success");
+      Swal.fire('Success', 'Order placed successfully!', 'success');
     } catch (error) {
-      console.error("Error placing order:", error);
-      Swal.fire("Error", "Failed to place order. Please try again.", "error");
+      Swal.fire('Error', 'Failed to place order. Please try again.', 'error');
     }
   };
 
@@ -418,6 +431,13 @@ function CartPage() {
                 disabled={!selectedAddress}
               >
                 Proceed to Checkout
+              </button>
+
+              <button
+                onClick={clearCart}
+                className="w-full bg-red-600 text-white py-3 rounded hover:bg-red-700 mt-4"
+              >
+                Clear Cart
               </button>
 
               <Link

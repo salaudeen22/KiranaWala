@@ -99,6 +99,8 @@ const LandingPage = () => {
         return { width: '75%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
       case 'delivered':
         return { width: '100%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
+      case 'shipped':
+        return { width: '60%', steps: ['Order placed', 'Preparing', 'Shipped', 'Delivered'] };
       default:
         return { width: '0%', steps: ['Order placed', 'Preparing', 'On the way', 'Delivered'] };
     }

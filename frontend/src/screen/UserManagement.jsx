@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import EmployeeTable from "../components/layout/EmployeeTable";
 import EmployeeForm from "../components/layout/EmployeeForm";
 import SearchBar from "../components/layout/SearchBar";
@@ -31,8 +32,7 @@ const UserManagement = () => {
     console.log(token);
     
     if (!token) {
-      alert("Authentication required. Please login again.");
-      // You might want to redirect to login here
+      Swal.fire("Authentication required", "Please login again.", "warning");
       return;
     }
 
@@ -61,11 +61,10 @@ const UserManagement = () => {
       }
   
       const responseData = await response.json();
-      // Handle both the array response and the object with data property
       const employees = Array.isArray(responseData) ? responseData : 
                        (responseData.data ? responseData.data : []);
 
-                       console.log(employees);
+      console.log(employees);
       
       setEmployeeData(employees);
     } catch (error) {
@@ -102,7 +101,7 @@ const UserManagement = () => {
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Image upload failed. Please try again.");
+      Swal.fire("Error", "Image upload failed. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +114,7 @@ const UserManagement = () => {
       name: employee.name,
       email: employee.email,
       phone: employee.phone,
-      password: "", // Don't pre-fill password for security
+      password: "", 
       role: employee.role,
       retailerId: employee.retailerId,
       panCard: employee.documents?.panCard || "",
@@ -128,7 +127,7 @@ const UserManagement = () => {
     e.preventDefault();
     
     if (!newEmployee.name || !newEmployee.email || !newEmployee.phone) {
-      alert("Please fill in all required fields");
+      Swal.fire("Error", "Please fill in all required fields", "warning");
       return;
     }
   
@@ -178,22 +177,32 @@ const UserManagement = () => {
       
     } catch (error) {
       console.error("Error:", error);
-      alert(`Error: ${error.message}`);
+      Swal.fire("Error", error.message, "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this employee?")) return;
-    
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
     const token = localStorage.getItem("token");
-    
+
     try {
       const response = await fetch(`http://localhost:6565/api/employees/${id}`, {
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -202,9 +211,10 @@ const UserManagement = () => {
       }
 
       await fetchEmployeeData(token, retailerId);
+      Swal.fire("Deleted!", "The employee has been deleted.", "success");
     } catch (error) {
       console.error("Error deleting employee:", error);
-      alert(error.message);
+      Swal.fire("Error", error.message, "error");
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 import { 
   FiX, FiEdit2, FiTrash2, FiImage, 
   FiTag, FiDollarSign, FiPercent, 
@@ -81,20 +82,30 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
         throw new Error(data.message || "Error updating product");
       }
 
-      alert("Product updated successfully!");
+      Swal.fire("Success", "Product updated successfully!", "success");
       handleUpdateProduct();
       setIsEditModalOpen(false);
     } catch (error) {
       console.error("Error:", error);
-      setError(error.message || "Error while updating product");
+      Swal.fire("Error", error.message, "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-    
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
     setIsSubmitting(true);
     setError(null);
     
@@ -116,12 +127,12 @@ const EditProductModel = ({ product, setIsEditModalOpen, handleUpdateProduct }) 
         throw new Error(data.message || "Error deleting product");
       }
 
-      alert("Product deleted successfully");
+      Swal.fire("Deleted!", "The product has been deleted.", "success");
       handleUpdateProduct();
       setIsEditModalOpen(false);
     } catch (error) {
       console.error("Error:", error);
-      setError(error.message || "Error while deleting product");
+      Swal.fire("Error", error.message, "error");
     } finally {
       setIsSubmitting(false);
     }

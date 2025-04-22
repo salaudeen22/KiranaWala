@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "../context/userContext";
 import { FiUser, FiMail, FiPhone, FiCamera, FiSave } from "react-icons/fi";
 import { motion } from "framer-motion";
+import Swal from "sweetalert2";
 
 const Profile = ({ handleUpdateProfile }) => {
   const { user, loading, error } = useUser();
@@ -47,11 +48,11 @@ const Profile = ({ handleUpdateProfile }) => {
     try {
       // Simulated API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      alert("Profile updated successfully!");
+      Swal.fire("Success", "Profile updated successfully!", "success");
       // handleUpdateProfile && handleUpdateProfile();
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert(error.message || "Error updating profile");
+      Swal.fire("Error", error.message || "Error updating profile", "error");
     } finally {
       setIsSubmitting(false);
     }

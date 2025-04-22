@@ -1,5 +1,6 @@
 import { FiX, FiUpload, FiDollarSign, FiTag, FiPackage, FiCalendar, FiPercent } from "react-icons/fi";
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 const AddProductModel = ({ setIsModalOpen }) => {
   const [newProduct, setNewProduct] = useState({
@@ -57,12 +58,12 @@ const AddProductModel = ({ setIsModalOpen }) => {
         throw new Error(data.message || "Failed to add product");
       }
 
-      alert(data.message || "Product added successfully!");
+      Swal.fire("Success", "Product added successfully!", "success");
       setIsModalOpen(false);
 
     } catch (error) {
       console.error("Error adding product:", error);
-      alert(error.message || "Error while adding product");
+      Swal.fire("Error", error.message, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -73,12 +74,12 @@ const AddProductModel = ({ setIsModalOpen }) => {
     
     // Validate required fields
     if (!newProduct.name || !newProduct.price || !newProduct.stock) {
-      alert("Please fill all required fields");
+      Swal.fire("Error", "Please fill all required fields", "error");
       return;
     }
 
     if (newProduct.discount > 100) {
-      alert("Discount cannot be greater than 100%");
+      Swal.fire("Error", "Discount cannot be greater than 100%", "error");
       return;
     }
 
@@ -115,7 +116,7 @@ const AddProductModel = ({ setIsModalOpen }) => {
     } catch (error) {
       console.error("Upload error:", error);
       setUploadStatus("error");
-      alert("Image upload failed. Please try again.");
+      Swal.fire("Error", "Image upload failed. Please try again.", "error");
     }
   };
 

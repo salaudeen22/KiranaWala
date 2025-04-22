@@ -108,7 +108,7 @@ const Broadcasts = () => {
     }
 
     socket.on("new_order", (newOrder) => {
-      console.log("New order received:", newOrder);
+      console.log("New order received:", newOrder); // Debug log
 
       setNotifications((prev) => [
         {
@@ -126,9 +126,9 @@ const Broadcasts = () => {
       ]);
 
       const audio = new Audio(
-        "../../assessts/mixkit-software-interface-remove-2576.wav"
+        "/assets/mixkit-software-interface-remove-2576.wav" // Corrected path
       );
-      audio.play().catch((e) => console.log("Audio play failed:", e));
+      audio.play().catch((e) => console.log("Audio play failed:", e)); // Debug log
 
       fetchBroadcasts();
     });

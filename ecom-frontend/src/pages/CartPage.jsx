@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { io } from "socket.io-client";
 import notificationSound from "../assessts/mixkit-software-interface-remove-2576.wav";
+import Swal from "sweetalert2";
 
 function CartPage() {
   const cart = useCart();
@@ -90,7 +91,7 @@ function CartPage() {
         }
 
         const message = `Your order has been accepted by retailer ${data.retailer.name}. Address: ${data.retailer.address}`;
-        alert(message); // Show alert for accepted order
+        Swal.fire("Order Accepted", message, "success");
         setNotifications((prev) => [
           { id: Date.now(), message, read: false },
           ...prev,
@@ -108,7 +109,7 @@ function CartPage() {
         console.log("Broadcast status updated:", data);
 
         const message = `Your order status has been updated to: ${data.newStatus}`;
-        alert(message); // Notify the user about the status update
+        Swal.fire("Order Status Updated", message, "info");
         setNotifications((prev) => [
           { id: Date.now(), message, read: false },
           ...prev,
@@ -166,7 +167,7 @@ function CartPage() {
 
   const handleCheckout = async () => {
     if (!selectedAddress) {
-      alert("Please select or add a delivery address.");
+      Swal.fire("Error", "Please select or add a delivery address.", "error");
       return;
     }
 
@@ -234,10 +235,10 @@ function CartPage() {
         }
       );
 
-      alert("Order placed successfully!");
+      Swal.fire("Success", "Order placed successfully!", "success");
     } catch (error) {
       console.error("Error placing order:", error);
-      alert("Failed to place order. Please try again.");
+      Swal.fire("Error", "Failed to place order. Please try again.", "error");
     }
   };
 

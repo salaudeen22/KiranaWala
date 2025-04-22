@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer } from "react";
+import Swal from "sweetalert2";
 
 const CartContext = createContext();
 const CartDispatchContext = createContext();
@@ -14,6 +15,14 @@ const reducer = (state, action) => {
       }
       const existingItem = state.find(item => item.id === id);
       if (existingItem) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "fire",
+          title: `${name} quantity updated in the cart.`,
+          showConfirmButton: false,
+          timer: 1500,
+        });
         return state.map(item =>
           item.id === id
             ? { 
@@ -24,6 +33,14 @@ const reducer = (state, action) => {
             : item
         );
       }
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: `${name} added to the cart.`,
+        showConfirmButton: false,
+        timer: 1500,
+      });
       return [
         ...state, 
         {

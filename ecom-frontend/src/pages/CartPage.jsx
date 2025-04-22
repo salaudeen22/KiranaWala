@@ -80,6 +80,7 @@ function CartPage() {
         console.error("WebSocket connection error:", error);
       });
 
+      // Listen for broadcast_accepted event
       socket.on("broadcast_accepted", (data) => {
         console.log("Notification received from server:", data);
 
@@ -151,6 +152,7 @@ function CartPage() {
     }
 
     try {
+      // Step 1: Create the order and retrieve the orderId
       const orderPayload = {
         customerId: user.id,
         retailerId: "67f0e6ae966a110b2d0fea79",
@@ -171,18 +173,7 @@ function CartPage() {
         total: totalPrice + 10,
       };
 
-      const broadcastPayload = {
-        products: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.qty,
-        })),
-        coordinates: [77.5946, 12.9716],
-        paymentMethod: "UPI",
-        deliveryAddress: selectedAddress,
-      };
-
-      // Place order
-      await axios.post(
+      const orderResponse = await axios.post(
         "http://localhost:6565/api/customers/orders",
         orderPayload,
         {
@@ -192,7 +183,28 @@ function CartPage() {
         }
       );
 
-      // Broadcast order
+      const orderId = orderResponse.data?.data?._id; // Extract orderId from the response
+
+      if (!orderId) {
+        throw new Error("Order ID not returned from the server.");
+      }
+
+      console.log("Order ID:", orderId); // Debugging log to ensure orderId is received
+
+      // Step 2: Create the broadcast using the retrieved orderId
+      const broadcastPayload = {
+        products: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.qty,
+        })),
+        coordinates: [77.5946, 12.9716],
+        paymentMethod: "UPI",
+        deliveryAddress: selectedAddress,
+        orderId, // Include the orderId in the broadcast payload
+      };
+
+      console.log("Broadcast Payload:", broadcastPayload); // Debugging log to ensure payload is correct
+
       await axios.post(
         "http://localhost:6565/api/broadcasts",
         broadcastPayload,

@@ -98,6 +98,11 @@ const BroadcastSchema = new mongoose.Schema({
       },
     },
   },
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

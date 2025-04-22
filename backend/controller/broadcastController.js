@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
 const Retailer = require("../model/vendorSchema");
+const Order = require("../model/OrderSchema"); // Added Order model import
 
 const Broadcast = require("../model/BroadcastSchema");
 
@@ -11,21 +12,44 @@ const Broadcast = require("../model/BroadcastSchema");
 // @access  Private (Customer)
 // In controller/broadcastController.js
 exports.createBroadcast = asyncHandler(async (req, res, next) => {
-  const { products, coordinates, paymentMethod, deliveryAddress } = req.body;
+  const { products, coordinates, paymentMethod, deliveryAddress, orderId } = req.body;
+
+  console.log("Received orderId:", orderId); // Debugging log to ensure orderId is received
+  console.log("Received orderId in backend:", orderId); // Debugging log to ensure orderId is received
 
   // Validate required fields
-  if (!products || !coordinates || !paymentMethod || !deliveryAddress) {
-    return next(new AppError("Missing required fields", 400));
+  const missingFields = [];
+  if (!products) missingFields.push("products");
+  if (!coordinates) missingFields.push("coordinates");
+  if (!paymentMethod) missingFields.push("paymentMethod");
+  if (!deliveryAddress) missingFields.push("deliveryAddress");
+  if (!orderId) missingFields.push("orderId");
+
+  if (missingFields.length > 0) {
+    console.error(`Missing required fields: ${missingFields.join(", ")}`);
+    console.error("Request body:", req.body); // Log the request body for debugging
+    return next(new AppError(`Missing required fields: ${missingFields.join(", ")}`, 400));
   }
 
   // Validate coordinates format
   if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    console.error("Invalid coordinates format. Expected [longitude, latitude]");
     return next(
       new AppError("Invalid coordinates format [longitude, latitude]", 400)
     );
   }
 
   try {
+    // Debugging log to ensure all fields are passed correctly
+    console.log("Creating broadcast with the following data:", {
+      customerId: req.user.id,
+      products,
+      coordinates,
+      paymentMethod,
+      deliveryAddress,
+      orderId,
+    });
+
     // Create broadcast
     const broadcast = await BroadcastService.createBroadcast({
       customerId: req.user.id,
@@ -33,15 +57,20 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
       coordinates,
       paymentMethod,
       deliveryAddress,
+      orderId, // Link the broadcast to the order
     });
 
     console.log(`Broadcast created with ID: ${broadcast._id} for customer: ${req.user.id}`);
 
-    // Populate product names
+    // Populate product names and orderId
     const populatedBroadcast = await Broadcast.findById(broadcast._id)
       .populate({
         path: "products.productId",
         select: "name",
+      })
+      .populate({
+        path: "orderId",
+        select: "orderId status", // Include relevant fields from the order
       })
       .lean();
 
@@ -63,7 +92,7 @@ exports.createBroadcast = asyncHandler(async (req, res, next) => {
       // Notify each retailer in real-time
       retailers.forEach((retailer) => {
         console.log(`Notifying retailer_${retailer._id} about broadcast_${broadcast._id}`);
-        req.io.to(`retailer_${retailer._id}`).emit("new_order", {
+        io.to(`retailer_${retailer._id}`).emit("new_order", {
           broadcastId: broadcast._id,
           customer: broadcast.customerId,
           totalAmount: broadcast.totalAmount,
@@ -268,6 +297,15 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   }
 
   console.log("Broadcast updated:", broadcast);
+
+  // Update the corresponding order status
+  await Order.findByIdAndUpdate(
+    broadcast.orderId,
+    { status },
+    { new: true }
+  );
+
+  console.log(`Order status updated for orderId: ${broadcast.orderId}`);
 
   // Notify customer
   const io = req.app.get("io");

@@ -48,13 +48,15 @@ class BroadcastService {
     coordinates,
     paymentMethod,
     deliveryAddress,
+    orderId,
   }) {
     if (
       !customerId ||
       !products ||
       !coordinates ||
       !paymentMethod ||
-      !deliveryAddress
+      !deliveryAddress ||
+      !orderId
     ) {
       throw new AppError("Missing required fields", 400);
     }
@@ -93,6 +95,7 @@ class BroadcastService {
       grandTotal,
       status: "pending",
       expiryTime: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes expiry
+      orderId,
     });
 
     return broadcast.populate("customerId", "name phone");

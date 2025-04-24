@@ -34,7 +34,7 @@ const Broadcasts = () => {
       if (!response.ok) throw new Error("Failed to fetch broadcasts");
 
       const data = await response.json();
-      setBroadcasts(data);
+      setBroadcasts(data.data);
     } catch (err) {
       Swal.fire({
         icon: "error",

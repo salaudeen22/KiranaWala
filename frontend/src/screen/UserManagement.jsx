@@ -170,6 +170,12 @@ const UserManagement = () => {
         throw new Error(responseData.message || "Failed to save employee");
       }
   
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Employee added successfully!",
+      });
+
       await fetchEmployeeData(token, retailerId);
       setIsOpen(false);
       setIsEditOpen(false);
@@ -177,7 +183,11 @@ const UserManagement = () => {
       
     } catch (error) {
       console.error("Error:", error);
-      Swal.fire("Error", error.message, "error");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to add employee. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }

@@ -22,22 +22,16 @@ const Sales = () => {
 
   const handleRemoveItem = (index) => {
     Swal.fire({
-      title: 'Are you sure?',
-      text: 'This item will be removed from the cart.',
-      icon: 'warning',
+      title: "Are you sure?",
+      text: "This item will be removed from the cart.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: 'Yes, remove it!',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: "Yes, remove it!",
+      cancelButtonText: "Cancel",
     }).then((result) => {
       if (result.isConfirmed) {
-        const updatedItems = [...items];
-        updatedItems.splice(index, 1);
-        setItems(updatedItems);
-        Swal.fire({
-          icon: 'success',
-          title: 'Item Removed',
-          text: 'The item has been removed from the cart.',
-        });
+        setItems((prevItems) => prevItems.filter((_, i) => i !== index));
+        Swal.fire("Removed!", "The item has been removed.", "success");
       }
     });
   };

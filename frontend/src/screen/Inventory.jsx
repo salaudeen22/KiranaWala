@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiRefreshCw, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import AddProductModel from '../components/InventoryModal/AddProductModel';
 import EditProductModel from '../components/InventoryModal/EditProductModel';
+import Swal from 'sweetalert2';
 
 const Inventory = () => {
   const [products, setProducts] = useState([]);
@@ -13,6 +14,7 @@ const Inventory = () => {
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchInventory();
@@ -73,16 +75,29 @@ const Inventory = () => {
         
         if (!response.ok) throw new Error('Failed to delete product');
         
+        Swal.fire("Success", "Product deleted successfully!", "success");
         fetchInventory();
       } catch (err) {
         console.error('Error deleting product:', err);
-        alert('Failed to delete product');
+        Swal.fire("Error", "Failed to delete product. Please try again.", "error");
       }
     }
   };
 
   const handleUpdateInventory = () => {
     fetchInventory();
+  };
+
+  const handleAddProduct = async () => {
+    setIsLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulated API call
+      Swal.fire("Success", "Product added successfully!", "success");
+    } catch (error) {
+      Swal.fire("Error", "Failed to add product. Please try again.", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredProducts = products.filter(product => {

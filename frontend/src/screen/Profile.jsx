@@ -44,14 +44,10 @@ const Profile = ({ handleUpdateProfile }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
-      // Simulated API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulated API call
       Swal.fire("Success", "Profile updated successfully!", "success");
-      // handleUpdateProfile && handleUpdateProfile();
     } catch (error) {
-      console.error("Error updating profile:", error);
       Swal.fire("Error", error.message || "Error updating profile", "error");
     } finally {
       setIsSubmitting(false);

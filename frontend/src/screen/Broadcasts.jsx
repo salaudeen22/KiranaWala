@@ -113,7 +113,15 @@ const Broadcasts = () => {
 
     socket.on("new_order", (newOrder) => {
       console.log("New order received:", newOrder); // Debug log
-
+      
+      const audio = new Audio(
+        "../assets/note.mp3" // Updated path
+      );
+      console.log("Playing notification sound..."); // Debug log
+      audio.volume = 0.5; // Set volume to 50%
+      audio.loop = true; // Play sound once
+      audio.muted = false; // Ensure sound is not muted
+      audio.play().catch((e) => console.log("Audio play failed:", e)); // Debug log
       setNotifications((prev) => [
         {
           id: Date.now(),
@@ -137,10 +145,6 @@ const Broadcasts = () => {
       console.log("Broadcast accepted notification received:", data);
       alert(`Order accepted by retailer: ${data.retailer.name}`);
 
-      const audio = new Audio(
-        "/assets/mixkit-software-interface-remove-2576.wav" // Updated path
-      );
-      audio.play().catch((e) => console.log("Audio play failed:", e)); // Debug log
     });
 
     // Fetch initial data

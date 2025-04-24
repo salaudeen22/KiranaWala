@@ -11,6 +11,7 @@ router.get('/sales-by-category', protect, authorize('admin', 'manager'), analyti
 // Customer analytics
 router.get('/customer-activity', protect, authorize('admin', 'manager'), analyticsController.getCustomerActivity);
 router.get('/customer-segments', protect, authorize('admin', 'manager'), analyticsController.getCustomerSegments);
+router.get('/top-customers', protect, authorize('admin', 'manager'), analyticsController.getTopCustomers);
 
 // Inventory analytics
 router.get('/inventory-turnover', protect, authorize('admin', 'manager'), analyticsController.getInventoryTurnover);
@@ -18,5 +19,13 @@ router.get('/stock-levels', protect, authorize('admin', 'manager'), analyticsCon
 
 // Delivery analytics
 router.get('/delivery-performance', protect, authorize('admin', 'manager'), analyticsController.getDeliveryPerformance);
+
+// Broadcast and Order analytics
+router.get('/broadcasts', protect, authorize('admin', 'manager'), analyticsController.getBroadcastAnalytics);
+router.get('/orders', protect, authorize('admin', 'manager'), analyticsController.getOrderAnalytics);
+
+// Additional analytics routes
+router.get('/top-categories', protect, authorize('admin', 'manager'), analyticsController.getTopCategories);
+router.get('/customer-retention', protect, authorize('admin', 'manager'), analyticsController.getCustomerRetentionRate);
 
 module.exports = router;

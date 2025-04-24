@@ -72,3 +72,48 @@ exports.getDeliveryPerformance = asyncHandler(async (req, res) => {
   const data = await analyticsService.getDeliveryPerformance(timeRange, retailerId);
   res.json({ success: true, data });
 });
+
+// @desc    Get broadcast analytics
+// @route   GET /api/analytics/broadcasts
+// @access  Private (Admin/Manager)
+exports.getBroadcastAnalytics = asyncHandler(async (req, res) => {
+  const { timeRange = "30d" } = req.query;
+  const data = await analyticsService.getBroadcastAnalytics(timeRange);
+  res.json({ success: true, data });
+});
+
+// @desc    Get order analytics
+// @route   GET /api/analytics/orders
+// @access  Private (Admin/Manager)
+exports.getOrderAnalytics = asyncHandler(async (req, res) => {
+  const { timeRange = "30d" } = req.query;
+  const data = await analyticsService.getOrderAnalytics(timeRange);
+  res.json({ success: true, data });
+});
+
+// @desc    Get top customers by spending
+// @route   GET /api/analytics/top-customers
+// @access  Private (Admin/Manager)
+exports.getTopCustomers = asyncHandler(async (req, res) => {
+  const { timeRange = '30d', limit = 5, retailerId } = req.query;
+  const data = await analyticsService.getTopCustomers(timeRange, limit, retailerId);
+  res.json({ success: true, data });
+});
+
+// @desc    Get top categories by revenue
+// @route   GET /api/analytics/top-categories
+// @access  Private (Admin/Manager)
+exports.getTopCategories = asyncHandler(async (req, res) => {
+  const { timeRange = '30d', limit = 5, retailerId } = req.query;
+  const data = await analyticsService.getTopCategories(timeRange, limit, retailerId);
+  res.json({ success: true, data });
+});
+
+// @desc    Get customer retention rate
+// @route   GET /api/analytics/customer-retention
+// @access  Private (Admin/Manager)
+exports.getCustomerRetentionRate = asyncHandler(async (req, res) => {
+  const { timeRange = '30d', retailerId } = req.query;
+  const data = await analyticsService.getCustomerRetentionRate(timeRange, retailerId);
+  res.json({ success: true, data });
+});

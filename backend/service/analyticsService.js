@@ -4,6 +4,7 @@ const Customer = require('../model/customerSchema');
 const Retailer = require('../model/vendorSchema');
 const Delivery = require('../model/Delivery');
 const mongoose = require('mongoose');
+const Order = require('../model/OrderSchema');
 
 // Helper function to get date range
 const getDateRange = (timeRange) => {
@@ -511,4 +512,148 @@ exports.getDeliveryPerformance = async (timeRange, retailerId) => {
       avgDeliveryTime: 0
     }
   };
+};
+
+// Broadcast Analytics
+exports.getBroadcastAnalytics = async (timeRange) => {
+  const { startDate, endDate } = getDateRange(timeRange);
+
+  const results = await Broadcast.aggregate([
+    { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const totalBroadcasts = results.reduce((sum, item) => sum + item.count, 0);
+
+  return {
+    totalBroadcasts,
+    statusBreakdown: results,
+  };
+};
+
+// Order Analytics
+exports.getOrderAnalytics = async (timeRange) => {
+  const { startDate, endDate } = getDateRange(timeRange);
+
+  const results = await Broadcast.aggregate([
+    { $match: { createdAt: { $gte: startDate, $lte: endDate }, orderId: { $exists: true } } },
+    {
+      $group: {
+        _id: "$orderId",
+        totalRevenue: { $sum: "$grandTotal" },
+        totalOrders: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const totalOrders = results.length;
+  const totalRevenue = results.reduce((sum, item) => sum + item.totalRevenue, 0);
+
+  return {
+    totalOrders,
+    totalRevenue,
+    orderDetails: results,
+  };
+};
+
+// Get top customers by spending
+exports.getTopCustomers = async (timeRange, limit, retailerId) => {
+  const dateRange = getDateRange(timeRange);
+  const matchCriteria = { createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate } };
+
+  if (retailerId) {
+    matchCriteria.retailerId = mongoose.Types.ObjectId(retailerId);
+  }
+
+  const customers = await Order.aggregate([
+    { $match: matchCriteria },
+    {
+      $group: {
+        _id: '$customerId',
+        totalSpent: { $sum: '$totalAmount' },
+        orderCount: { $sum: 1 },
+      },
+    },
+    {
+      $lookup: {
+        from: 'customers',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'customerDetails',
+      },
+    },
+    { $unwind: '$customerDetails' },
+    {
+      $project: {
+        _id: 1,
+        totalSpent: 1,
+        orderCount: 1,
+        name: '$customerDetails.name',
+        email: '$customerDetails.email',
+      },
+    },
+    { $sort: { totalSpent: -1 } },
+    { $limit: parseInt(limit, 10) },
+  ]);
+
+  return customers;
+};
+
+// Get top categories by revenue
+exports.getTopCategories = async (timeRange, limit, retailerId) => {
+  const dateRange = getDateRange(timeRange);
+  const matchCriteria = { createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate } };
+
+  if (retailerId) {
+    matchCriteria.retailerId = mongoose.Types.ObjectId(retailerId);
+  }
+
+  const categories = await Product.aggregate([
+    { $match: matchCriteria },
+    {
+      $group: {
+        _id: '$category',
+        totalRevenue: { $sum: '$price' },
+        totalQuantity: { $sum: '$quantitySold' },
+      },
+    },
+    { $sort: { totalRevenue: -1 } },
+    { $limit: parseInt(limit, 10) },
+  ]);
+
+  return categories;
+};
+
+// Get customer retention rate
+exports.getCustomerRetentionRate = async (timeRange, retailerId) => {
+  const dateRange = getDateRange(timeRange);
+  const matchCriteria = { createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate } };
+
+  if (retailerId) {
+    matchCriteria.retailerId = mongoose.Types.ObjectId(retailerId);
+  }
+
+  const totalCustomers = await Customer.countDocuments(matchCriteria);
+  const returningCustomers = await Customer.aggregate([
+    { $match: matchCriteria },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: '_id',
+        foreignField: 'customerId',
+        as: 'orders',
+      },
+    },
+    { $match: { 'orders.1': { $exists: true } } },
+    { $count: 'returningCustomers' },
+  ]);
+
+  const retentionRate = (returningCustomers[0]?.returningCustomers || 0) / totalCustomers * 100;
+
+  return { totalCustomers, returningCustomers: returningCustomers[0]?.returningCustomers || 0, retentionRate };
 };

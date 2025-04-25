@@ -12,6 +12,9 @@ const morgan = require("morgan");
 // Database connection
 connectdb();
 
+// Connect the expireBroadcasts cron job
+require('./file/expireBroadcasts');
+
 // Middlewares
 app.use(cors());
 app.use(express.json());

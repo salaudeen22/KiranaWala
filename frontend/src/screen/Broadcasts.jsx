@@ -166,8 +166,12 @@ const Broadcasts = () => {
       return status === "pending";
     } else if (filter === "processing") {
       return ["accepted", "preparing", "shipped"].includes(status);
+    } else if (filter === "expired") {
+      return status === "expired";
+    } else if (filter === "rejected") {
+      return status === "rejected";
     } else if (filter === "completed") {
-      return ["delivered", "cancelled", "completed"].includes(status);
+      return ["completed", "delivered"].includes(status);
     }
     return true;
   });
@@ -322,7 +326,27 @@ const Broadcasts = () => {
                   : "bg-gray-200 text-gray-800"
               }`}
             >
-              Processing
+              Processing & Shipped
+            </button>
+            <button
+              onClick={() => setFilter("expired")}
+              className={`px-3 py-1 text-sm rounded-lg ${
+                filter === "expired"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-800"
+              }`}
+            >
+              Expired
+            </button>
+            <button
+              onClick={() => setFilter("rejected")}
+              className={`px-3 py-1 text-sm rounded-lg ${
+                filter === "rejected"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-800"
+              }`}
+            >
+              Rejected
             </button>
             <button
               onClick={() => setFilter("completed")}
@@ -420,6 +444,8 @@ const Broadcasts = () => {
                                 : broadcast.status === "delivered" ||
                                   broadcast.status === "completed"
                                 ? "bg-green-100 text-green-800"
+                                : broadcast.status === "expired"
+                                ? "bg-gray-100 text-gray-800"
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
@@ -521,6 +547,8 @@ const Broadcasts = () => {
                         ? "text-purple-600"
                         : selectedBroadcast.status === "completed"
                         ? "text-green-600"
+                        : selectedBroadcast.status === "expired"
+                        ? "text-gray-600"
                         : "text-red-600"
                     }`}
                   >

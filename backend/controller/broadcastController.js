@@ -317,7 +317,7 @@ exports.getAvailableBroadcasts = asyncHandler(async (req, res, next) => {
   console.log("Mapping the pincode", pincodes.length);
 
   const broadcasts = await Broadcast.find({
-    status: { $in: ['pending', 'accepted', 'rejected', 'completed', 'cancelled'] },
+    status: { $in: ['pending', 'accepted', 'rejected', 'completed', 'cancelled', 'expired'] }, // Added 'expired'
     "deliveryAddress.pincode": { $in: pincodes },
     // location: {
     //   $nearSphere: {

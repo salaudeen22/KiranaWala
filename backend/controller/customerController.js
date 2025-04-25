@@ -357,7 +357,7 @@ exports.getCustomerBroadcasts = asyncHandler(async (req, res, next) => {
   const broadcasts = await CustomerService.getCustomerBroadcasts(req.user.id);
   res.status(200).json({
     success: true,
-    data: broadcasts
+    data: broadcasts,
   });
 });
 

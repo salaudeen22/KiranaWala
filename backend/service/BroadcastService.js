@@ -102,10 +102,14 @@ class BroadcastService {
   }
 
   static async getCustomerBroadcasts(customerId) {
-    return await Broadcast.find({ customerId })
+    return await Broadcast.find({
+      customerId,
+      status: { $in: ["pending", "accepted", "expired"] }, // Added 'expired'
+    })
       .sort("-createdAt")
       .populate("retailerId", "name");
   }
+
   static async cancelBroadcast(broadcastId, customerId) {
     return await Broadcast.findOneAndUpdate(
       { _id: broadcastId, customerId, status: "pending" },

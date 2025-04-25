@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Add useRef for audio reference
 import {
   FiRefreshCw,
   FiBell,
@@ -6,9 +6,14 @@ import {
   FiCheck,
   FiTruck,
   FiPackage,
+  FiUser,
+  FiMapPin,
+  FiCreditCard,
+  FiShoppingBag,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
 import Swal from "sweetalert2";
+import notificationSound from "../assets/note.mp3"; // Import the audio file
 
 const Broadcasts = () => {
   const [broadcasts, setBroadcasts] = useState([]);
@@ -18,6 +23,25 @@ const Broadcasts = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState(null);
+  const audioRef = useRef(null); // Create a ref for the audio element
+
+  useEffect(() => {
+    audioRef.current = new Audio(notificationSound);
+    audioRef.current.load();
+
+    const handleUserInteraction = () => {
+      audioRef.current.play().catch(() => {
+        console.log("Audio preloaded after user interaction.");
+      });
+      window.removeEventListener("click", handleUserInteraction);
+    };
+
+    window.addEventListener("click", handleUserInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleUserInteraction);
+    };
+  }, []);
 
   // Fetch broadcasts from API
   const fetchBroadcasts = async () => {
@@ -41,6 +65,7 @@ const Broadcasts = () => {
         title: "Error Fetching Broadcasts",
         text: err.message || "Unable to fetch broadcasts. Please try again later.",
       });
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -67,7 +92,7 @@ const Broadcasts = () => {
       fetchBroadcasts(); // Refresh the list
       return data.data;
     } catch (err) {
-      alert(err.message);
+      Swal.fire("Error", err.message, "error");
       throw err;
     }
   };
@@ -82,46 +107,97 @@ const Broadcasts = () => {
 
       // Notify the customer
       const socket = io("http://localhost:6565");
-      console.log(localStorage.getItem("Id"));
       socket.emit("broadcast_accepted", {
         broadcastId: updatedBroadcast._id,
         retailer: {
           id: localStorage.getItem("Id"),
-          name: "Retailer Name", // Replace with actual retailer name if available
-          address: "Retailer Address", // Replace with actual retailer address if available
+          name: "Retailer Name",
+          address: "Retailer Address",
         },
       });
 
-      setSelectedBroadcast(updatedBroadcast);
+      // Fetch full broadcast details after acceptance
+      const detailsResponse = await fetch(
+        `http://localhost:6565/api/broadcasts/${broadcastId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      
+      if (detailsResponse.ok) {
+        const detailsData = await detailsResponse.json();
+        setSelectedBroadcast(detailsData.data);
+      } else {
+        setSelectedBroadcast(updatedBroadcast);
+      }
     } catch (error) {
       console.error("Error accepting broadcast:", error);
     }
   };
 
-  // Initialize Socket.IO and fetch initial data
+  // Handle completing a broadcast
+  const handleCompleteBroadcast = async (broadcastId) => {
+    try {
+      // First update the status
+      const response = await fetch(
+        `http://localhost:6565/api/broadcasts/${broadcastId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ status: "completed" }),
+        }
+      );
 
+      if (!response.ok) throw new Error("Failed to update broadcast status");
+
+      // Then get the full details
+      const detailsResponse = await fetch(
+        `http://localhost:6565/api/broadcasts/${broadcastId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      
+      if (detailsResponse.ok) {
+        const detailsData = await detailsResponse.json();
+        setSelectedBroadcast(detailsData.data);
+        Swal.fire("Success", "Order marked as completed!", "success");
+      } else {
+        const updatedBroadcast = await response.json();
+        setSelectedBroadcast(updatedBroadcast.data);
+      }
+      
+      fetchBroadcasts(); // Refresh the list
+    } catch (error) {
+      Swal.fire("Error", error.message || "Failed to complete order", "error");
+    }
+  };
+
+  // Initialize Socket.IO and fetch initial data
   useEffect(() => {
     const socket = io("http://localhost:6565");
-    console.log("Connecting to WebSocket server...");
-
     const retailerId = localStorage.getItem("Id");
 
     if (retailerId) {
       socket.emit("join_retailer", retailerId);
-      console.log(`Retailer joined room: retailer_${retailerId}`);
     }
 
     socket.on("new_order", (newOrder) => {
-      console.log("New order received:", newOrder); // Debug log
-      
-      const audio = new Audio(
-        "../assets/note.mp3" // Updated path
-      );
-      console.log("Playing notification sound..."); // Debug log
-      audio.volume = 0.5; // Set volume to 50%
-      audio.loop = true; // Play sound once
-      audio.muted = false; // Ensure sound is not muted
-      audio.play().catch((e) => console.log("Audio play failed:", e)); // Debug log
+      console.log("New order received:", newOrder);
+
+      try {
+        audioRef.current.play().catch((e) => console.log("Audio play failed:", e));
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+
       setNotifications((prev) => [
         {
           id: Date.now(),
@@ -140,18 +216,13 @@ const Broadcasts = () => {
       fetchBroadcasts();
     });
 
-    // Handle broadcast accepted event
     socket.on("broadcast_accepted", (data) => {
       console.log("Broadcast accepted notification received:", data);
-      alert(`Order accepted by retailer: ${data.retailer.name}`);
-
     });
 
-    // Fetch initial data
     fetchBroadcasts();
 
     return () => {
-      console.log("Cleaning up WebSocket connection...");
       socket.disconnect();
     };
   }, []);
@@ -176,23 +247,20 @@ const Broadcasts = () => {
     return true;
   });
 
-  // Mark all notifications as read
+  // Notification handlers
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  // Clear all notifications
   const clearNotifications = () => {
     setNotifications([]);
   };
 
-  // Handle notification click
   const handleNotificationClick = (notification) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
     );
 
-    // Find by broadcastId which was set as _id in the notification
     const matchingBroadcast = broadcasts.find(
       (b) => b._id === notification.broadcast._id
     );
@@ -211,10 +279,7 @@ const Broadcasts = () => {
 
   if (error) {
     return (
-      <div
-        className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4"
-        role="alert"
-      >
+      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
         <p className="font-bold">Error</p>
         <p>{error}</p>
         <button
@@ -226,8 +291,6 @@ const Broadcasts = () => {
       </div>
     );
   }
-  // console.log("All broadcasts:", broadcasts);
-  // console.log("Filter:", filter);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -275,9 +338,9 @@ const Broadcasts = () => {
                       No new notifications
                     </div>
                   ) : (
-                    notifications.map((notification, index) => (
+                    notifications.map((notification) => (
                       <div
-                        key={notification.id || index} // Ensure unique key
+                        key={notification.id}
                         className={`p-3 border-b hover:bg-gray-50 cursor-pointer ${
                           !notification.read ? "bg-blue-50" : ""
                         }`}
@@ -326,27 +389,7 @@ const Broadcasts = () => {
                   : "bg-gray-200 text-gray-800"
               }`}
             >
-              Processing & Shipped
-            </button>
-            <button
-              onClick={() => setFilter("expired")}
-              className={`px-3 py-1 text-sm rounded-lg ${
-                filter === "expired"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-            >
-              Expired
-            </button>
-            <button
-              onClick={() => setFilter("rejected")}
-              className={`px-3 py-1 text-sm rounded-lg ${
-                filter === "rejected"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-            >
-              Rejected
+              Processing
             </button>
             <button
               onClick={() => setFilter("completed")}
@@ -396,11 +439,8 @@ const Broadcasts = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBroadcasts.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan="4"
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
-                        No broadcasts found
+                      <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                        No orders found
                       </td>
                     </tr>
                   ) : (
@@ -472,6 +512,7 @@ const Broadcasts = () => {
                               <button
                                 className="text-red-600"
                                 onClick={(e) => {
+                                  e.stopPropagation();
                                   updateBroadcastStatus(
                                     broadcast._id,
                                     "rejected"
@@ -514,6 +555,18 @@ const Broadcasts = () => {
                               <FiTruck className="inline" />
                             </button>
                           )}
+                          {broadcast.status === "shipped" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCompleteBroadcast(broadcast._id);
+                              }}
+                              className="text-green-600 hover:text-green-900"
+                              title="Mark as Completed"
+                            >
+                              Complete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -524,73 +577,72 @@ const Broadcasts = () => {
           </div>
         </div>
 
-        {/* Broadcast details */}
+        {/* Order details panel */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow overflow-hidden sticky top-4">
             {selectedBroadcast ? (
               <div className="p-4">
-                <h2 className="text-lg font-semibold mb-4">
+                <h2 className="text-lg font-semibold mb-4 flex items-center">
+                  <FiShoppingBag className="mr-2" />
                   Order #{selectedBroadcast._id.substring(18, 24)}
+                  <span className={`ml-auto px-2 py-1 text-xs rounded-full ${
+                    selectedBroadcast.status === "completed"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}>
+                    {selectedBroadcast.status.charAt(0).toUpperCase() + selectedBroadcast.status.slice(1)}
+                  </span>
                 </h2>
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">
-                    Status
+
+                {/* Customer Details Section */}
+                <div className="mb-4 bg-gray-50 p-3 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                    <FiUser className="mr-1" />
+                    Customer Details
                   </h3>
-                  <p
-                    className={`text-sm font-medium ${
-                      selectedBroadcast.status === "pending"
-                        ? "text-yellow-600"
-                        : selectedBroadcast.status === "accepted" ||
-                          selectedBroadcast.status === "preparing"
-                        ? "text-blue-600"
-                        : selectedBroadcast.status === "shipped"
-                        ? "text-purple-600"
-                        : selectedBroadcast.status === "completed"
-                        ? "text-green-600"
-                        : selectedBroadcast.status === "expired"
-                        ? "text-gray-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {selectedBroadcast.status
-                      .split("_")
-                      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                      .join(" ")}
-                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Name</p>
+                      <p className="text-sm font-medium">
+                        {selectedBroadcast.customerId?.name || "Unknown"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Contact</p>
+                      <p className="text-sm">
+                        {selectedBroadcast.customerId?.phone || selectedBroadcast.deliveryAddress?.contactNumber || "N/A"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">
-                    Customer
-                  </h3>
-                  <p className="text-sm">
-                    {selectedBroadcast.customerId?.name || "Unknown"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {selectedBroadcast.customerId?.phone || "No contact"}
-                  </p>
-                </div>
-
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">
+                {/* Delivery Address Section */}
+                <div className="mb-4 bg-gray-50 p-3 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                    <FiMapPin className="mr-1" />
                     Delivery Address
                   </h3>
-                  <p className="text-sm">
-                    {selectedBroadcast.deliveryAddress.street}
-                  </p>
-                  <p className="text-sm">
-                    {selectedBroadcast.deliveryAddress.city},{" "}
-                    {selectedBroadcast.deliveryAddress.state} -{" "}
-                    {selectedBroadcast.deliveryAddress.pincode}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Contact: {selectedBroadcast.deliveryAddress.contactNumber}
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm">{selectedBroadcast.deliveryAddress?.street}</p>
+                    <p className="text-sm">
+                      {selectedBroadcast.deliveryAddress?.city}, {selectedBroadcast.deliveryAddress?.state} -{" "}
+                      {selectedBroadcast.deliveryAddress?.pincode}
+                    </p>
+                    {selectedBroadcast.deliveryAddress?.landmark && (
+                      <p className="text-sm">Landmark: {selectedBroadcast.deliveryAddress.landmark}</p>
+                    )}
+                    {selectedBroadcast.deliveryAddress?.instructions && (
+                      <p className="text-sm text-blue-600">
+                        Instructions: {selectedBroadcast.deliveryAddress.instructions}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
+                {/* Order Items Section */}
                 <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">
-                    Items
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">
+                    Order Items ({selectedBroadcast.products.length})
                   </h3>
                   <ul className="divide-y divide-gray-200">
                     {selectedBroadcast.products.map((product) => (
@@ -600,44 +652,57 @@ const Broadcasts = () => {
                             {product.quantity} × {product.productId.name}
                           </span>
                           <span className="text-sm font-medium">
-                            ₹
-                            {(
-                              product.priceAtPurchase * product.quantity
-                            ).toFixed(2)}
+                            ₹{(product.priceAtPurchase * product.quantity).toFixed(2)}
                           </span>
                         </div>
+                        {product.notes && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Note: {product.notes}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>
                 </div>
 
+                {/* Payment Summary Section */}
                 <div className="border-t border-gray-200 pt-3">
-                  <div className="flex justify-between text-sm font-medium mb-1">
-                    <span>Subtotal:</span>
-                    <span>₹{selectedBroadcast.totalAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-medium mb-1">
-                    <span>Delivery:</span>
-                    <span>₹20.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-medium mb-1">
-                    <span>Tax (5%):</span>
-                    <span>
-                      ₹{(selectedBroadcast.totalAmount * 0.05).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold mt-2">
-                    <span>Total:</span>
-                    <span>₹{selectedBroadcast.grandTotal.toFixed(2)}</span>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                    <FiCreditCard className="mr-1" />
+                    Payment Summary
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>₹{selectedBroadcast.totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Delivery Fee:</span>
+                      <span>₹20.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Tax (5%):</span>
+                      <span>₹{(selectedBroadcast.totalAmount * 0.05).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-base font-bold mt-2 pt-2 border-t border-gray-200">
+                      <span>Total:</span>
+                      <span>₹{selectedBroadcast.grandTotal.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
 
+                {/* Payment Method Section */}
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-gray-500 mb-1">
                     Payment Method
                   </h3>
                   <p className="text-sm capitalize">
                     {selectedBroadcast.paymentMethod}
+                    {selectedBroadcast.paymentMethod === "online" && selectedBroadcast.paymentStatus === "paid" && (
+                      <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                        Paid
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

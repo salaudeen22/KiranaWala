@@ -245,7 +245,7 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
   const broadcast = await Broadcast.findOneAndUpdate(
     {
       _id: broadcastId,
-      expiryTime: { $gt: new Date() },
+      $or: [{ status: "pending" }, { status: "accepted" }], // Allow updates for pending or accepted broadcasts
     },
     {
       status,
@@ -257,7 +257,7 @@ exports.updateBroadcastStatus = asyncHandler(async (req, res, next) => {
 
   if (!broadcast) {
     console.error("Broadcast no longer available or expired");
-    return next(new AppError("Broadcast no longer available", 400));
+    return next(new AppError("Broadcast no longer available or expired", 400));
   }
 
   console.log("Broadcast updated:", broadcast);

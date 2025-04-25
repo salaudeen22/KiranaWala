@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // Add useRef for audio reference
+import { useState, useEffect, useRef } from "react";
 import {
   FiRefreshCw,
   FiBell,
@@ -10,10 +10,11 @@ import {
   FiMapPin,
   FiCreditCard,
   FiShoppingBag,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { io } from "socket.io-client";
 import Swal from "sweetalert2";
-import notificationSound from "../assets/note.mp3"; // Import the audio file
+import notificationSound from "../assets/note.mp3";
 
 const Broadcasts = () => {
   const [broadcasts, setBroadcasts] = useState([]);
@@ -23,7 +24,7 @@ const Broadcasts = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState(null);
-  const audioRef = useRef(null); // Create a ref for the audio element
+  const audioRef = useRef(null);
 
   useEffect(() => {
     audioRef.current = new Audio(notificationSound);
@@ -43,7 +44,6 @@ const Broadcasts = () => {
     };
   }, []);
 
-  // Fetch broadcasts from API
   const fetchBroadcasts = async () => {
     try {
       setLoading(true);
@@ -71,7 +71,6 @@ const Broadcasts = () => {
     }
   };
 
-  // Update broadcast status
   const updateBroadcastStatus = async (broadcastId, newStatus) => {
     try {
       const response = await fetch(
@@ -89,7 +88,7 @@ const Broadcasts = () => {
       if (!response.ok) throw new Error("Failed to update broadcast status");
 
       const data = await response.json();
-      fetchBroadcasts(); // Refresh the list
+      fetchBroadcasts();
       return data.data;
     } catch (err) {
       Swal.fire("Error", err.message, "error");
@@ -97,7 +96,6 @@ const Broadcasts = () => {
     }
   };
 
-  // Handle accepting a broadcast
   const handleAcceptBroadcast = async (broadcastId) => {
     try {
       const updatedBroadcast = await updateBroadcastStatus(
@@ -105,7 +103,6 @@ const Broadcasts = () => {
         "accepted"
       );
 
-      // Notify the customer
       const socket = io("http://localhost:6565");
       socket.emit("broadcast_accepted", {
         broadcastId: updatedBroadcast._id,
@@ -116,7 +113,6 @@ const Broadcasts = () => {
         },
       });
 
-      // Fetch full broadcast details after acceptance
       const detailsResponse = await fetch(
         `http://localhost:6565/api/broadcasts/${broadcastId}`,
         {
@@ -137,10 +133,8 @@ const Broadcasts = () => {
     }
   };
 
-  // Handle completing a broadcast
   const handleCompleteBroadcast = async (broadcastId) => {
     try {
-      // First update the status
       const response = await fetch(
         `http://localhost:6565/api/broadcasts/${broadcastId}/status`,
         {
@@ -155,7 +149,6 @@ const Broadcasts = () => {
 
       if (!response.ok) throw new Error("Failed to update broadcast status");
 
-      // Then get the full details
       const detailsResponse = await fetch(
         `http://localhost:6565/api/broadcasts/${broadcastId}`,
         {
@@ -168,19 +161,24 @@ const Broadcasts = () => {
       if (detailsResponse.ok) {
         const detailsData = await detailsResponse.json();
         setSelectedBroadcast(detailsData.data);
-        Swal.fire("Success", "Order marked as completed!", "success");
+        Swal.fire({
+          icon: "success",
+          title: "Order Completed!",
+          text: "The order has been marked as completed successfully.",
+          showConfirmButton: false,
+          timer: 1500
+        });
       } else {
         const updatedBroadcast = await response.json();
         setSelectedBroadcast(updatedBroadcast.data);
       }
       
-      fetchBroadcasts(); // Refresh the list
+      fetchBroadcasts();
     } catch (error) {
       Swal.fire("Error", error.message || "Failed to complete order", "error");
     }
   };
 
-  // Initialize Socket.IO and fetch initial data
   useEffect(() => {
     const socket = io("http://localhost:6565");
     const retailerId = localStorage.getItem("Id");
@@ -190,8 +188,6 @@ const Broadcasts = () => {
     }
 
     socket.on("new_order", (newOrder) => {
-      console.log("New order received:", newOrder);
-
       try {
         audioRef.current.play().catch((e) => console.log("Audio play failed:", e));
       } catch (e) {
@@ -216,10 +212,6 @@ const Broadcasts = () => {
       fetchBroadcasts();
     });
 
-    socket.on("broadcast_accepted", (data) => {
-      console.log("Broadcast accepted notification received:", data);
-    });
-
     fetchBroadcasts();
 
     return () => {
@@ -227,7 +219,6 @@ const Broadcasts = () => {
     };
   }, []);
 
-  // Filter broadcasts based on status
   const filteredBroadcasts = broadcasts.filter((broadcast) => {
     if (!broadcast.status) return false;
 
@@ -247,7 +238,6 @@ const Broadcasts = () => {
     return true;
   });
 
-  // Notification handlers
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
@@ -297,7 +287,6 @@ const Broadcasts = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Order Broadcasts</h1>
         <div className="flex space-x-4 items-center">
-          {/* Notification Bell */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
@@ -369,34 +358,33 @@ const Broadcasts = () => {
             )}
           </div>
 
-          {/* Filter buttons */}
           <div className="flex space-x-2">
             <button
               onClick={() => setFilter("pending")}
-              className={`px-3 py-1 text-sm rounded-lg ${
+              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                 filter === "pending"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
               }`}
             >
               Pending
             </button>
             <button
               onClick={() => setFilter("processing")}
-              className={`px-3 py-1 text-sm rounded-lg ${
+              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                 filter === "processing"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
               }`}
             >
               Processing
             </button>
             <button
               onClick={() => setFilter("completed")}
-              className={`px-3 py-1 text-sm rounded-lg ${
+              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                 filter === "completed"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
               }`}
             >
               Completed
@@ -405,7 +393,7 @@ const Broadcasts = () => {
 
           <button
             onClick={fetchBroadcasts}
-            className="flex items-center px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+            className="flex items-center px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
           >
             <FiRefreshCw className="mr-1" />
             Refresh
@@ -413,9 +401,7 @@ const Broadcasts = () => {
         </div>
       </div>
 
-      {/* Main content area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Broadcasts list */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
@@ -499,18 +485,18 @@ const Broadcasts = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           {broadcast.status === "pending" && (
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center space-x-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleAcceptBroadcast(broadcast._id);
                                 }}
-                                className="text-green-600 hover:text-green-900 mr-2"
+                                className="p-1.5 text-green-600 hover:text-green-800 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
+                                title="Accept Order"
                               >
                                 <FiCheck className="inline" />
                               </button>
                               <button
-                                className="text-red-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   updateBroadcastStatus(
@@ -518,8 +504,10 @@ const Broadcasts = () => {
                                     "rejected"
                                   );
                                 }}
+                                className="p-1.5 text-red-600 hover:text-red-800 bg-red-50 rounded-full hover:bg-red-100 transition-colors"
+                                title="Reject Order"
                               >
-                                <FiX />
+                                <FiX className="inline" />
                               </button>
                             </div>
                           )}
@@ -532,7 +520,7 @@ const Broadcasts = () => {
                                   "preparing"
                                 );
                               }}
-                              className="text-blue-600 hover:text-blue-900 mr-2"
+                              className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors"
                               title="Mark as Preparing"
                             >
                               <FiPackage className="inline" />
@@ -549,21 +537,24 @@ const Broadcasts = () => {
                                   "shipped"
                                 );
                               }}
-                              className="text-purple-600 hover:text-purple-900"
+                              className="p-1.5 text-purple-600 hover:text-purple-800 bg-purple-50 rounded-full hover:bg-purple-100 transition-colors"
                               title="Mark as Shipped"
                             >
                               <FiTruck className="inline" />
                             </button>
                           )}
-                          {broadcast.status === "shipped" && (
+                          {["shipped", "preparing", "accepted"].includes(
+                            broadcast.status
+                          ) && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCompleteBroadcast(broadcast._id);
                               }}
-                              className="text-green-600 hover:text-green-900"
+                              className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
                               title="Mark as Completed"
                             >
+                              <FiCheckCircle className="mr-1" />
                               Complete
                             </button>
                           )}
@@ -577,7 +568,6 @@ const Broadcasts = () => {
           </div>
         </div>
 
-        {/* Order details panel */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow overflow-hidden sticky top-4">
             {selectedBroadcast ? (
@@ -594,7 +584,6 @@ const Broadcasts = () => {
                   </span>
                 </h2>
 
-                {/* Customer Details Section */}
                 <div className="mb-4 bg-gray-50 p-3 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
                     <FiUser className="mr-1" />
@@ -616,7 +605,6 @@ const Broadcasts = () => {
                   </div>
                 </div>
 
-                {/* Delivery Address Section */}
                 <div className="mb-4 bg-gray-50 p-3 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
                     <FiMapPin className="mr-1" />
@@ -639,7 +627,6 @@ const Broadcasts = () => {
                   </div>
                 </div>
 
-                {/* Order Items Section */}
                 <div className="mb-4">
                   <h3 className="text-sm font-medium text-gray-500 mb-2">
                     Order Items ({selectedBroadcast.products.length})
@@ -665,7 +652,6 @@ const Broadcasts = () => {
                   </ul>
                 </div>
 
-                {/* Payment Summary Section */}
                 <div className="border-t border-gray-200 pt-3">
                   <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center">
                     <FiCreditCard className="mr-1" />
@@ -691,7 +677,6 @@ const Broadcasts = () => {
                   </div>
                 </div>
 
-                {/* Payment Method Section */}
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-gray-500 mb-1">
                     Payment Method

@@ -5,7 +5,8 @@ const asyncHandler = require('express-async-handler');
 // @route   GET /api/analytics/sales
 // @access  Private (Admin/Manager)
 exports.getSalesAnalytics = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', retailerId } = req.query;
+const { timeRange = '30d' } = req.query;
+  const retailerId = req.user.retailerId; // Ensure retailerId is taken from authenticated user
   const data = await analyticsService.getSalesAnalytics(timeRange, retailerId);
   res.json({ success: true, data });
 });
@@ -14,7 +15,8 @@ exports.getSalesAnalytics = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/sales-by-product
 // @access  Private (Admin/Manager)
 exports.getSalesByProduct = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', limit = 5, retailerId } = req.query;
+  const { timeRange = '30d', limit = 5 } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getSalesByProduct(timeRange, limit, retailerId);
   res.json({ success: true, data });
 });
@@ -23,7 +25,8 @@ exports.getSalesByProduct = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/sales-by-category
 // @access  Private (Admin/Manager)
 exports.getSalesByCategory = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', retailerId } = req.query;
+  const { timeRange = '30d' } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getSalesByCategory(timeRange, retailerId);
   res.json({ success: true, data });
 });
@@ -32,7 +35,8 @@ exports.getSalesByCategory = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/customer-activity
 // @access  Private (Admin/Manager)
 exports.getCustomerActivity = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', retailerId } = req.query;
+  const { timeRange = '30d' } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getCustomerActivity(timeRange, retailerId);
   res.json({ success: true, data });
 });
@@ -41,7 +45,7 @@ exports.getCustomerActivity = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/customer-segments
 // @access  Private (Admin/Manager)
 exports.getCustomerSegments = asyncHandler(async (req, res) => {
-  const { retailerId } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getCustomerSegments(retailerId);
   res.json({ success: true, data });
 });
@@ -50,7 +54,8 @@ exports.getCustomerSegments = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/inventory-turnover
 // @access  Private (Admin/Manager)
 exports.getInventoryTurnover = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', retailerId } = req.query;
+  const { timeRange = '30d' } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getInventoryTurnover(timeRange, retailerId);
   res.json({ success: true, data });
 });
@@ -59,7 +64,8 @@ exports.getInventoryTurnover = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/stock-levels
 // @access  Private (Admin/Manager)
 exports.getStockLevels = asyncHandler(async (req, res) => {
-  const { threshold = 5, retailerId } = req.query;
+  const { threshold = 5 } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getStockLevels(threshold, retailerId);
   res.json({ success: true, data });
 });
@@ -68,7 +74,8 @@ exports.getStockLevels = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/delivery-performance
 // @access  Private (Admin/Manager)
 exports.getDeliveryPerformance = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', retailerId } = req.query;
+  const { timeRange = '30d' } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getDeliveryPerformance(timeRange, retailerId);
   res.json({ success: true, data });
 });
@@ -78,7 +85,8 @@ exports.getDeliveryPerformance = asyncHandler(async (req, res) => {
 // @access  Private (Admin/Manager)
 exports.getBroadcastAnalytics = asyncHandler(async (req, res) => {
   const { timeRange = "30d" } = req.query;
-  const data = await analyticsService.getBroadcastAnalytics(timeRange);
+  const retailerId = req.user.retailerId;
+  const data = await analyticsService.getBroadcastAnalytics(timeRange, retailerId);
   res.json({ success: true, data });
 });
 
@@ -87,7 +95,8 @@ exports.getBroadcastAnalytics = asyncHandler(async (req, res) => {
 // @access  Private (Admin/Manager)
 exports.getOrderAnalytics = asyncHandler(async (req, res) => {
   const { timeRange = "30d" } = req.query;
-  const data = await analyticsService.getOrderAnalytics(timeRange);
+  const retailerId = req.user.retailerId;
+  const data = await analyticsService.getOrderAnalytics(timeRange, retailerId);
   res.json({ success: true, data });
 });
 
@@ -95,7 +104,8 @@ exports.getOrderAnalytics = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/top-customers
 // @access  Private (Admin/Manager)
 exports.getTopCustomers = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', limit = 5, retailerId } = req.query;
+  const { timeRange = '30d', limit = 5 } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getTopCustomers(timeRange, limit, retailerId);
   res.json({ success: true, data });
 });
@@ -104,7 +114,8 @@ exports.getTopCustomers = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/top-categories
 // @access  Private (Admin/Manager)
 exports.getTopCategories = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', limit = 5, retailerId } = req.query;
+  const { timeRange = '30d', limit = 5 } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getTopCategories(timeRange, limit, retailerId);
   res.json({ success: true, data });
 });
@@ -113,7 +124,8 @@ exports.getTopCategories = asyncHandler(async (req, res) => {
 // @route   GET /api/analytics/customer-retention
 // @access  Private (Admin/Manager)
 exports.getCustomerRetentionRate = asyncHandler(async (req, res) => {
-  const { timeRange = '30d', retailerId } = req.query;
+  const { timeRange = '30d' } = req.query;
+  const retailerId = req.user.retailerId;
   const data = await analyticsService.getCustomerRetentionRate(timeRange, retailerId);
   res.json({ success: true, data });
 });

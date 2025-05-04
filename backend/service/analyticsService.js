@@ -37,12 +37,9 @@ exports.getSalesAnalytics = async (timeRange, retailerId) => {
   
   const matchStage = { 
     createdAt: { $gte: startDate, $lte: endDate },
-    status: { $in: ['completed'] }
+    status: { $in: ['completed'] },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
   };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
   
   const results = await Broadcast.aggregate([
     { $match: matchStage },
@@ -91,12 +88,9 @@ exports.getSalesByProduct = async (timeRange, limit, retailerId) => {
   
   const matchStage = { 
     createdAt: { $gte: startDate, $lte: endDate },
-    status: { $in: ['completed'] }
+    status: { $in: ['completed'] },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
   };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
   
   return await Broadcast.aggregate([
     { $match: matchStage },
@@ -138,12 +132,9 @@ exports.getSalesByCategory = async (timeRange, retailerId) => {
   
   const matchStage = { 
     createdAt: { $gte: startDate, $lte: endDate },
-    status: { $in: ['completed'] }
+    status: { $in: ['completed'] },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
   };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
   
   return await Broadcast.aggregate([
     { $match: matchStage },
@@ -182,12 +173,9 @@ exports.getCustomerActivity = async (timeRange, retailerId) => {
   
   const matchStage = { 
     createdAt: { $gte: startDate, $lte: endDate },
-    status: { $in: ['completed'] }
+    status: { $in: ['completed'] },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
   };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
   
   const results = await Broadcast.aggregate([
     { $match: matchStage },
@@ -257,11 +245,9 @@ exports.getCustomerActivity = async (timeRange, retailerId) => {
 
 // Customer Segments
 exports.getCustomerSegments = async (retailerId) => {
-  const matchStage = {};
-  
-  if (retailerId) {
-    matchStage.preferredStores = { $elemMatch: { retailerId: mongoose.Types.ObjectId(retailerId) } };
-  }
+  const matchStage = { 
+    preferredStores: { $elemMatch: { retailerId: new mongoose.Types.ObjectId(retailerId) } }
+  };
   
   // Segment by broadcast frequency
   const frequencySegments = await Customer.aggregate([
@@ -343,12 +329,9 @@ exports.getInventoryTurnover = async (timeRange, retailerId) => {
   
   const matchStage = { 
     createdAt: { $gte: startDate, $lte: endDate },
-    status: { $in: ['completed'] }
+    status: { $in: ['completed'] },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
   };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
   
   // Get sales data
   const salesData = await Broadcast.aggregate([
@@ -363,10 +346,7 @@ exports.getInventoryTurnover = async (timeRange, retailerId) => {
   ]);
   
   // Get inventory data
-  const inventoryMatch = {};
-  if (retailerId) {
-    inventoryMatch.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
+  const inventoryMatch = { retailerId: new mongoose.Types.ObjectId(retailerId) };
   
   const inventoryData = await Product.aggregate([
     { $match: inventoryMatch },
@@ -416,11 +396,10 @@ exports.getInventoryTurnover = async (timeRange, retailerId) => {
 
 // Stock Levels
 exports.getStockLevels = async (threshold, retailerId) => {
-  const matchStage = { stock: { $lte: parseInt(threshold) } };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
+  const matchStage = { 
+    stock: { $lte: parseInt(threshold) },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
+  };
   
   const lowStockProducts = await Product.find(matchStage)
     .select('name category stock price')
@@ -447,12 +426,9 @@ exports.getDeliveryPerformance = async (timeRange, retailerId) => {
   const matchStage = { 
     createdAt: { $gte: startDate, $lte: endDate },
     status: 'completed',
-    deliveryPersonId: { $exists: true }
+    deliveryPersonId: { $exists: true },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
   };
-  
-  if (retailerId) {
-    matchStage.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
   
   const results = await Broadcast.aggregate([
     { $match: matchStage },
@@ -515,11 +491,16 @@ exports.getDeliveryPerformance = async (timeRange, retailerId) => {
 };
 
 // Broadcast Analytics
-exports.getBroadcastAnalytics = async (timeRange) => {
+exports.getBroadcastAnalytics = async (timeRange, retailerId) => {
   const { startDate, endDate } = getDateRange(timeRange);
 
+  const matchStage = { 
+    createdAt: { $gte: startDate, $lte: endDate },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
+  };
+
   const results = await Broadcast.aggregate([
-    { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+    { $match: matchStage },
     {
       $group: {
         _id: "$status",
@@ -537,11 +518,17 @@ exports.getBroadcastAnalytics = async (timeRange) => {
 };
 
 // Order Analytics
-exports.getOrderAnalytics = async (timeRange) => {
+exports.getOrderAnalytics = async (timeRange, retailerId) => {
   const { startDate, endDate } = getDateRange(timeRange);
 
+  const matchStage = { 
+    createdAt: { $gte: startDate, $lte: endDate },
+    orderId: { $exists: true },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
+  };
+
   const results = await Broadcast.aggregate([
-    { $match: { createdAt: { $gte: startDate, $lte: endDate }, orderId: { $exists: true } } },
+    { $match: matchStage },
     {
       $group: {
         _id: "$orderId",
@@ -564,11 +551,10 @@ exports.getOrderAnalytics = async (timeRange) => {
 // Get top customers by spending
 exports.getTopCustomers = async (timeRange, limit, retailerId) => {
   const dateRange = getDateRange(timeRange);
-  const matchCriteria = { createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate } };
-
-  if (retailerId) {
-    matchCriteria.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
+  const matchCriteria = { 
+    createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
+  };
 
   const customers = await Order.aggregate([
     { $match: matchCriteria },
@@ -607,11 +593,10 @@ exports.getTopCustomers = async (timeRange, limit, retailerId) => {
 // Get top categories by revenue
 exports.getTopCategories = async (timeRange, limit, retailerId) => {
   const dateRange = getDateRange(timeRange);
-  const matchCriteria = { createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate } };
-
-  if (retailerId) {
-    matchCriteria.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
+  const matchCriteria = { 
+    createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
+  };
 
   const categories = await Product.aggregate([
     { $match: matchCriteria },
@@ -632,11 +617,10 @@ exports.getTopCategories = async (timeRange, limit, retailerId) => {
 // Get customer retention rate
 exports.getCustomerRetentionRate = async (timeRange, retailerId) => {
   const dateRange = getDateRange(timeRange);
-  const matchCriteria = { createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate } };
-
-  if (retailerId) {
-    matchCriteria.retailerId = mongoose.Types.ObjectId(retailerId);
-  }
+  const matchCriteria = { 
+    createdAt: { $gte: dateRange.startDate, $lte: dateRange.endDate },
+    retailerId: new mongoose.Types.ObjectId(retailerId)
+  };
 
   const totalCustomers = await Customer.countDocuments(matchCriteria);
   const returningCustomers = await Customer.aggregate([

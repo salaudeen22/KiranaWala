@@ -4,7 +4,10 @@ const analyticsController = require('../../controller/analyticsController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
 // Sales analytics
-router.get('/sales', protect, authorize('admin', 'manager'), analyticsController.getSalesAnalytics);
+router.get('/sales', protect, authorize('admin', 'manager'), (req, res, next) => {
+    req.user.retailerId = req.user.retailerId || null; // Ensure retailerId is attached
+    next();
+}, analyticsController.getSalesAnalytics);
 router.get('/sales-by-product', protect, authorize('admin', 'manager'), analyticsController.getSalesByProduct);
 router.get('/sales-by-category', protect, authorize('admin', 'manager'), analyticsController.getSalesByCategory);
 

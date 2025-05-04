@@ -11,7 +11,7 @@ router.use(authMiddleware.protect);
 
 router.get('/getAll', retailerController.getAllRetailers);
 router.get('/', retailerController.getRetailer);
-router.patch('/', retailerController.updateRetailer);
+router.patch('/', retailerController.updateRetailer); // Ensure the PATCH route for updating retailer settings is correctly defined
 router.delete('/', retailerController.deleteRetailer);
 
 // Employee management

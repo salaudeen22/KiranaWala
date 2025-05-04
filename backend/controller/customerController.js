@@ -18,22 +18,32 @@ const nodemailer = require("nodemailer");
 exports.register = asyncHandler(async (req, res, next) => {
   const { name, email, phone, password } = req.body;
 
-  // 1) Check if customer exists
-  const customerExists = await Customer.findOne({ $or: [{ email }, { phone }] });
-  if (customerExists) {
-    return next(new AppError('Customer with this email or phone already exists', 400));
+  try {
+    // 1) Check if customer exists
+    const customerExists = await Customer.findOne({ $or: [{ email }, { phone }] });
+    if (customerExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer with this email or phone already exists',
+      });
+    }
+
+    // 2) Create new customer
+    const customer = await Customer.create({
+      name,
+      email,
+      phone,
+      password
+    });
+
+    // 3) Generate token and send response
+    createSendToken(customer, 201, res);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-
-  // 2) Create new customer
-  const customer = await Customer.create({
-    name,
-    email,
-    phone,
-    password
-  });
-
-  // 3) Generate token and send response
-  createSendToken(customer, 201, res);
 });
 
 // @desc    Login customer
@@ -498,4 +508,24 @@ exports.resetPassword = async (req, res) => {
 
   res.status(200).json({ message: "Password reset successful" });
 };
+
+// @desc    Update customer settings
+// @route   PUT /api/customers/settings
+// @access  Private
+exports.updateSettings = asyncHandler(async (req, res, next) => {
+  const customer = await Customer.findById(req.user.id);
+
+  if (!customer) {
+    return next(new AppError('Customer not found', 404));
+  }
+
+  // Update settings
+  customer.settings = { ...customer.settings, ...req.body };
+  await customer.save();
+
+  res.status(200).json({
+    success: true,
+    data: customer.settings,
+  });
+});
 

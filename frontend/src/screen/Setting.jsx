@@ -87,11 +87,14 @@ function Setting() {
 
   const handleSaveSettings = async () => {
     try {
-      const response = await fetch('http://localhost:6565/api/settings', {
-        method: 'PUT',
+      const token = localStorage.getItem('token'); 
+      console.log("Token:", token);
+      // Retrieve token from localStorage
+      const response = await fetch('http://localhost:6565/api/retailers/', { // Updated route
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          Authorization: `Bearer ${token}`, // Send token in Authorization header
         },
         body: JSON.stringify(formData),
       });

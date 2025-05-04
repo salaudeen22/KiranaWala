@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiRefreshCw, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import AddProductModel from '../components/InventoryModal/AddProductModel';
 import EditProductModel from '../components/InventoryModal/EditProductModel';
+import BulkUploadModal from '../components/InventoryModal/BulkUploadModal';
 import Swal from 'sweetalert2';
 
 const Inventory = () => {
@@ -15,6 +16,7 @@ const Inventory = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(false);
+  const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
 
   useEffect(() => {
     fetchInventory();
@@ -174,6 +176,13 @@ const Inventory = () => {
             <FiRefreshCw className="mr-2" />
             Refresh
           </button>
+
+          <button
+            onClick={() => setIsBulkUploadModalOpen(true)}
+            className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Bulk Upload
+          </button>
         </div>
       </div>
 
@@ -286,6 +295,14 @@ const Inventory = () => {
           product={selectedProduct}
           setIsEditModalOpen={setIsEditModalOpen}
           handleUpdateProduct={handleUpdateInventory}
+        />
+      )}
+
+      {/* Bulk Upload Modal */}
+      {isBulkUploadModalOpen && (
+        <BulkUploadModal
+          setIsModalOpen={setIsBulkUploadModalOpen}
+          onProductsUploaded={fetchInventory}
         />
       )}
     </div>

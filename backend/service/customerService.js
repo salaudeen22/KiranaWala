@@ -283,9 +283,15 @@ class CustomerService {
   static async getWishlist(userId) {
     const customer = await Customer.findById(userId)
       .select("wishlist")
-      .populate("wishlist.productId", "name price");
+      .populate("wishlist.productId", "name price images"); // Include images in the response
 
-    return customer.wishlist;
+    return customer.wishlist.map(item => ({
+      ...item.toObject(),
+      productId: {
+        ...item.productId.toObject(),
+        image: item.productId.images?.[0]?.url || null // Add the first image URL
+      }
+    }));
   }
 
   // @desc    Add to wishlist

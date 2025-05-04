@@ -64,7 +64,11 @@ function ProductsPage() {
 
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:6565/api/categories");
+        const response = await fetch("http://localhost:6565/api/products/categories", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
         const data = await response.json();
         if (data.success) setCategories(data.data);
       } catch (err) {

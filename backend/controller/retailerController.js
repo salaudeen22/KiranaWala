@@ -91,20 +91,30 @@ exports.getRetailer = async (req, res) => {
 // Update retailer
 exports.updateRetailer = async (req, res) => {
   try {
-    const retailer = await retailerService.updateRetailer(
-      req.user.id,
-      req.body
-    );
-    if (!retailer) {
-      return res.status(404).json({
-        success: false,
-        message: "Retailer not found",
+    const retailer = await Retailer.findById(req.user.id);
+
+    if (retailer) {
+      // Update existing retailer
+      const updatedRetailer = await Retailer.findByIdAndUpdate(
+        req.user.id,
+        req.body,
+        { new: true, runValidators: true }
+      );
+      return res.status(200).json({
+        success: true,
+        data: updatedRetailer,
+      });
+    } else {
+      // Create new retailer
+      const newRetailer = await Retailer.create({
+        ...req.body,
+        ownerId: req.user.id,
+      });
+      return res.status(201).json({
+        success: true,
+        data: newRetailer,
       });
     }
-    res.status(200).json({
-      success: true,
-      data: retailer,
-    });
   } catch (error) {
     res.status(400).json({
       success: false,

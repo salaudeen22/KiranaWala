@@ -52,6 +52,8 @@ router.get('/broadcasts', customerProtect, customerController.getCustomerBroadca
 router.get('/broadcasts/:id', customerProtect, customerController.getBroadcastDetails);
 router.patch('/broadcasts/:id/cancel', customerProtect, customerController.cancelBroadcast);
 
+// Settings management
+
 // Add retailer-specific routes
 router.get('/retailer/broadcasts', protect, retailerController.getAvailableBroadcasts);
 router.patch('/retailer/broadcasts/:id/accept', protect, retailerController.acceptBroadcast);

@@ -111,9 +111,9 @@ function Wishlist() {
                             <div key={item._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
                                 <Link to={`/products/${product._id}`} className="block">
                                     <div className="h-48 bg-gray-100 relative overflow-hidden">
-                                        {product.images?.[0]?.url ? (
+                                        {product.image ? (
                                             <img 
-                                                src={product.images[0].url} 
+                                                src={product.image} 
                                                 alt={product.name}
                                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                             />

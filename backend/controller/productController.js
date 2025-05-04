@@ -1,6 +1,9 @@
 const ProductService = require('../service/productService');
 const asyncHandler = require('express-async-handler');
 const AppError = require('../utils/appError');
+const xlsx = require('xlsx');
+const fs = require('fs');
+const path = require('path');
 
 // Public endpoints
 exports.getPublicProductsByRetailer = asyncHandler(async (req, res) => {
@@ -101,7 +104,7 @@ exports.searchProducts = asyncHandler(async (req, res) => {
 });
 
 exports.getCategories = asyncHandler(async (req, res) => {
-  const categories = await ProductService.getCategories(req.user.retailerId);
+  const categories = await Product.distinct('category');
   res.status(200).json({ success: true, data: categories });
 });
 
@@ -122,35 +125,45 @@ exports.getProductByBarcode = asyncHandler(async (req, res) => {
 });
 
 exports.bulkUploadProducts = asyncHandler(async (req, res, next) => {
-  const { products } = req.body;
+  console.log("Uploaded file:", req.file); // Debugging log
 
-  if (!Array.isArray(products) || products.length === 0) {
-    return next(new AppError("Products must be a non-empty array", 400));
+  if (!req.file) {
+    return next(new AppError("No file uploaded", 400)); // Ensure this error is clear
   }
 
-  const retailerId = req.user.retailerId;
-
-  // Add retailerId to each product and validate required fields
-  const productsWithRetailer = products.map((product) => {
-    // Format expiryDate to ISO 8601 if it exists
-    if (product.expiryDate) {
-      const formattedDate = new Date(product.expiryDate);
-      if (isNaN(formattedDate)) {
-        throw new AppError(`Invalid expiryDate format: ${product.expiryDate}`, 400);
-      }
-      product.expiryDate = formattedDate.toISOString();
-    }
-    return { ...product, retailerId };
-  });
-
   try {
-    const createdProducts = await ProductService.bulkCreateProducts(productsWithRetailer);
+    // Process the uploaded file (e.g., Excel file)
+    const workbook = xlsx.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const retailerId = req.user.retailerId;
+    const products = sheetData.map((product) => ({
+      ...product,
+      retailerId,
+    }));
+
+    const createdProducts = await ProductService.bulkCreateProducts(products);
+
+    // Delete the temporary file
+    fs.unlinkSync(req.file.path);
+
     res.status(201).json({
       success: true,
       data: createdProducts,
     });
   } catch (error) {
-    console.error("Error during bulk product upload:", error);
-    return next(new AppError("Failed to upload products", 500));
+    console.error("Error processing bulk upload:", error);
+    return next(new AppError("Failed to process the uploaded file", 500));
   }
+});
+
+exports.downloadTemplate = asyncHandler(async (req, res, next) => {
+  const filePath = path.join(__dirname, '../../templates/product_template.xlsx');
+  res.download(filePath, 'product_template.xlsx', (err) => {
+    if (err) {
+      console.error('Error sending template file:', err);
+      return next(new AppError('Failed to download template', 500));
+    }
+  });
 });

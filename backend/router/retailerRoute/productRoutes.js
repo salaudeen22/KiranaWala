@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../../controller/productController');
 const authMiddleware = require('../../middleware/authMiddleware');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' }); // Temporary storage for uploaded files
 
 // Public routes
 router.get('/public/all', productController.getAllPublicProducts);
@@ -46,7 +48,10 @@ router.patch('/:id/stock',
 
 router.post('/bulk-upload', 
   authMiddleware.authorize('admin', 'manager'), 
+  upload.single('file'), // Handle file upload
   productController.bulkUploadProducts
 );
+
+router.get('/bulk-upload/template', productController.downloadTemplate);
 
 module.exports = router;
